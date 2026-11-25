@@ -192,7 +192,8 @@ class GeneralLightingPage(QWidget):
                 self.rows.addWidget(self._row(dev.id, dev.name, TYPE_NAMES.get(dev.type.name, dev.type.name.title()), c,
                                               mode + (f" {c.name().upper()}" if mode.lower() in ("static", "direct") else "")))
         else:
-            note = QLabel("Other devices aren't available: OpenRGB isn't running. Only the Ajazz keyboard will change.")
+            note = QLabel("Other devices aren't available: OpenRGB isn't running. Install it free from <a href='https://openrgb.org' style='color:#9d86ff;'>openrgb.org</a> for lighting on most brands.")
+            note.setOpenExternalLinks(True)
             note.setStyleSheet("color: #9aa0a6;")
             note.setWordWrap(True)
             self.rows.addWidget(note)
@@ -249,6 +250,12 @@ class GeneralLightingPage(QWidget):
             self.lbl_sync.show()
             if follow:
                 self._realign.start()
+
+    def sync_now(self):
+        """(effect name, ids of devices being streamed to) while a synced effect runs, else (None, set())."""
+        if not self._timer.isActive():
+            return None, set()
+        return ("Synced Gradient" if self._gradient else "Synced Rainbow"), {dv.id for dv in self._sync_devs}
 
     def stop_sync(self):
         self._timer.stop()

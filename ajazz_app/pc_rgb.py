@@ -2,7 +2,8 @@
 mice and headsets from brands such as Wooting, Razer, Corsair, Logitech and SteelSeries) via OpenRGB's SDK server."""
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPixmap, QPainter, QIcon
-from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox)
+from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton, QComboBox)
+from .device_art import device_picture
 
 try:
     from openrgb import OpenRGBClient
@@ -103,6 +104,9 @@ class PcLightingPage(QWidget):
         # set by the main window for keyboards the app drives itself: kb_apply(effect, QColor) -> bool,
         # kb_now() -> (effect name, QColor | None, connected)
         self.kb_apply, self.kb_now, self.kb_name = None, None, "Ajazz AK820 Max HE"
+        # set by the main window: sync_now() -> (effect name, set of synced device ids) while a synced effect runs
+        self.sync_now = lambda: (None, set())
+        self.selected = None  # key of the device whose panel is open
         self.all_colour = QColor(255, 140, 26)
         self.dev_colours = {}
 
@@ -129,6 +133,7 @@ class PcLightingPage(QWidget):
 
         self.lbl_status = QLabel()
         self.lbl_status.setWordWrap(True)
+        self.lbl_status.setOpenExternalLinks(True)
         self.lbl_status.setStyleSheet("color: #9aa0a6;")
         lay.addWidget(self.lbl_status)
 
@@ -161,12 +166,15 @@ class PcLightingPage(QWidget):
         lay.addSpacing(4)
         lay.addWidget(line)
 
-        sec2 = QLabel("Devices")
+        sec2 = QLabel("Devices <span style='color:#6b6e7a; font-weight:500;'>· click one to change it</span>")
         sec2.setStyleSheet("color: #c4c6d0; font-size: 12px; font-weight: 700;")
         lay.addWidget(sec2)
-        self.dev_box = QVBoxLayout()
-        self.dev_box.setSpacing(8)
-        lay.addLayout(self.dev_box)
+        self.grid = QGridLayout()
+        self.grid.setHorizontalSpacing(10)
+        self.grid.setVerticalSpacing(10)
+        lay.addLayout(self.grid)
+        self.detail_box = QVBoxLayout()
+        lay.addLayout(self.detail_box)
 
         self.rescan()
 
@@ -187,67 +195,131 @@ class PcLightingPage(QWidget):
             return True
         except Exception:
             self.client = None
-            self.lbl_status.setText("Can't reach OpenRGB. Make sure OpenRGB is running (its SDK server on port 6742), then click Rescan.")
+            self.lbl_status.setText("Can't reach OpenRGB, which handles lighting for most brands. Install it free from <a href='https://openrgb.org' style='color:#9d86ff;'>openrgb.org</a> (or start it), then click Rescan.")
             return False
 
-    def rescan(self):
-        while self.dev_box.count():
-            it = self.dev_box.takeAt(0)
-            if it.widget():
-                it.widget().deleteLater()
-        count = 0
+    def _devices(self):
+        """Everything to show: (key, name, type key, kind label, colour now, state text, apply_fn)."""
+        out = []
+        sync_effect, synced = self.sync_now()
         if self.kb_now is not None:
             effect, col, connected = self.kb_now()
             if connected:
-                now_txt = effect + (f" {col.name().upper()}" if col is not None and effect != "Off" else "")
-                self.dev_box.addWidget(self._row("keyboard", self.kb_name, "Keyboard", col or QColor(0, 0, 0), now_txt,
-                                                 lambda e, c: self.kb_apply(e, c)))
-                count += 1
+                txt = effect + (f" {col.name().upper()}" if col is not None and effect not in ("Off", "Rainbow", "Unknown") else "")
+                out.append(("keyboard", self.kb_name, "KEYBOARD", "Keyboard", col or QColor(0, 0, 0), txt,
+                            lambda e, c: self.kb_apply(e, c)))
         ok = self._connect()  # also refreshes device states
         if ok:
             for dev in self.client.devices:
                 now = current_colour(dev)
-                mode = dev.modes[dev.active_mode].name if dev.modes else "?"
-                txt = mode + (f" {now.name().upper()}" if mode.lower() in ("static", "direct") else "")
-                self.dev_box.addWidget(self._row(dev.id, dev.name, TYPE_NAMES.get(dev.type.name, dev.type.name.title()),
-                                                 now, txt, lambda e, c, d=dev: apply_to_device(d, e, c)))
-                count += 1
-        self.btn_all.setEnabled(count > 0)
-        found = f"{count} device{'s' if count != 1 else ''} found."
+                if dev.id in synced:
+                    txt = sync_effect  # streamed by the app; the hardware only sees one frame at a time
+                else:
+                    mode = dev.modes[dev.active_mode].name if dev.modes else "?"
+                    txt = mode + (f" {now.name().upper()}" if mode.lower() in ("static", "direct") else "")
+                out.append((dev.id, dev.name, dev.type.name, TYPE_NAMES.get(dev.type.name, dev.type.name.title()), now, txt,
+                            lambda e, c, dv=dev: apply_to_device(dv, e, c)))
+        return out, ok
+
+    def rescan(self):
+        for box in (self.grid, self.detail_box):
+            while box.count():
+                it = box.takeAt(0)
+                if it.widget():
+                    it.widget().deleteLater()
+        devs, ok = self._devices()
+        self.btn_all.setEnabled(bool(devs))
+        found = f"{len(devs)} device{'s' if len(devs) != 1 else ''} found."
         self.lbl_status.setText(
             f"{found} Close other RGB apps (Armoury Crate, NZXT CAM, Razer Synapse, iCUE, G HUB) so they don't override these settings."
-            if ok else f"{found} OpenRGB isn't running, so only directly supported devices are listed. Start OpenRGB, then click Rescan.")
-        if count == 0:
+            if ok else f"{found} OpenRGB isn't running, so only directly supported devices are listed. Install it free from <a href='https://openrgb.org' style='color:#9d86ff;'>openrgb.org</a> (or start it), then click Rescan.")
+        if not devs:
             empty = QLabel("No RGB devices found. Plug in the device, make sure OpenRGB is running, then click Rescan.")
             empty.setStyleSheet("color: #9aa0a6;")
-            self.dev_box.addWidget(empty)
+            self.grid.addWidget(empty, 0, 0)
+            return
+        keys = [x[0] for x in devs]
+        if self.selected not in keys:
+            self.selected = keys[0]
+        for i, dv in enumerate(devs):
+            self.grid.addWidget(self._card(dv), i // 3, i % 3)
+        for col in range(3):
+            self.grid.setColumnStretch(col, 1)
+        self.detail_box.addWidget(self._detail(devs[keys.index(self.selected)]))
 
-    # ---------- rows ----------
-    def _row(self, key, name_text, kind_text, now, mode_now, apply_fn):
-        """One device: current state, effect, colour and Apply. apply_fn(effect, QColor) does the work."""
-        row_w = QFrame()
-        row_w.setStyleSheet("QFrame#devrow { background-color: #1d1f27; border: 1px solid #282a35; border-radius: 10px; }")
-        row_w.setObjectName("devrow")
-        row = QHBoxLayout(row_w)
-        row.setContentsMargins(12, 8, 12, 8)
-        row.setSpacing(10)
-        dot = QLabel()
-        dot.setPixmap(status_swatch(mode_now, now).pixmap(16, 16))
-        row.addWidget(dot)
-        text = QVBoxLayout()
-        text.setSpacing(0)
+    # ---------- cards ----------
+    def _card(self, dv):
+        key, name_text, type_key, kind_text, now, state, _ = dv
+        sel = key == self.selected
+        card = QFrame()
+        card.setObjectName("devcard")
+        card.setCursor(Qt.PointingHandCursor)
+        card.setStyleSheet(
+            "QFrame#devcard { background-color: %s; border: %s; border-radius: 12px; } QFrame#devcard:hover { border-color: #7c5cff; }"
+            % ("#221d38" if sel else "#1d1f27", "1.5px solid #7c5cff" if sel else "1px solid #282a35"))
+        card.mousePressEvent = lambda e, k=key: self._select(k)
+        v = QVBoxLayout(card)
+        v.setContentsMargins(12, 10, 12, 10)
+        v.setSpacing(4)
+        pic = QLabel()
+        pic.setAlignment(Qt.AlignCenter)
+        pic.setPixmap(device_picture(type_key, now if not state.lower().startswith(("rainbow", "synced", "spectrum", "color cycle")) else QColor("#7c5cff"), 150, 84))
+        pic.setStyleSheet("background: transparent; border: none;")
+        v.addWidget(pic)
         name = QLabel(name_text)
-        name.setStyleSheet("font-weight: 600; color: #e2e2e9;")
-        kind = QLabel(f"{kind_text} · now: {mode_now}")
-        kind.setStyleSheet("color: #9aa0a6; font-size: 11px;")
-        text.addWidget(name)
-        text.addWidget(kind)
-        row.addLayout(text, 1)
+        name.setStyleSheet("font-weight: 600; color: #e2e2e9; background: transparent; border: none;")
+        name.setToolTip(name_text)
+        name.setMinimumWidth(10)
+        v.addWidget(name)
+        row = QHBoxLayout()
+        row.setSpacing(6)
+        dot = QLabel()
+        dot.setPixmap(status_swatch(state, now, 12).pixmap(12, 12))
+        dot.setStyleSheet("background: transparent; border: none;")
+        row.addWidget(dot)
+        info = QLabel(f"{kind_text} · {state}")
+        info.setStyleSheet("color: #9aa0a6; font-size: 11px; background: transparent; border: none;")
+        info.setMinimumWidth(10)
+        row.addWidget(info, 1)
+        v.addLayout(row)
+        return card
+
+    def _select(self, key):
+        self.selected = key
+        self.rescan()
+
+    # ---------- the open device ----------
+    def _detail(self, dv):
+        key, name_text, type_key, kind_text, now, state, apply_fn = dv
+        panel = QFrame()
+        panel.setObjectName("devdetail")
+        panel.setStyleSheet("QFrame#devdetail { background-color: #1a1b22; border: 1px solid #282a35; border-radius: 12px; }")
+        h = QHBoxLayout(panel)
+        h.setContentsMargins(16, 14, 16, 14)
+        h.setSpacing(18)
+        pic = QLabel()
+        pic.setPixmap(device_picture(type_key, now if not state.lower().startswith(("rainbow", "synced", "spectrum", "color cycle")) else QColor("#7c5cff"), 190, 110))
+        pic.setStyleSheet("background: transparent; border: none;")
+        h.addWidget(pic)
+        right = QVBoxLayout()
+        right.setSpacing(6)
+        title = QLabel(name_text)
+        title.setStyleSheet("font-size: 15px; font-weight: 700; color: #f4f5fb; background: transparent; border: none;")
+        title.setWordWrap(True)
+        right.addWidget(title)
+        sub_l = QLabel(f"{kind_text} · now: {state}")
+        sub_l.setStyleSheet("color: #9aa0a6; background: transparent; border: none;")
+        right.addWidget(sub_l)
+        right.addSpacing(6)
 
         if key not in self.dev_colours:
             self.dev_colours[key] = now if now != QColor(0, 0, 0) else QColor(self.all_colour)
+        ctl = QHBoxLayout()
+        ctl.setSpacing(8)
+        ctl.addWidget(QLabel("Effect:"))
         cb = QComboBox()
         cb.addItems(EFFECTS)
+        ctl.addWidget(cb)
         b_col = QPushButton("Color")
         b_col.setIcon(_swatch(self.dev_colours[key]))
 
@@ -258,7 +330,10 @@ class PcLightingPage(QWidget):
                 b_col.setIcon(_swatch(c))
         b_col.clicked.connect(pick)
         cb.currentTextChanged.connect(lambda e: b_col.setEnabled(e == "Static"))
+        ctl.addWidget(b_col)
+        ctl.addStretch()
         b_apply = QPushButton("Apply")
+        b_apply.setObjectName("primary")
 
         def apply_one():
             self.before_change()
@@ -270,9 +345,11 @@ class PcLightingPage(QWidget):
                 self._log(f"✕ {name_text}: {e}", False)
             self.rescan()
         b_apply.clicked.connect(apply_one)
-        for w in (cb, b_col, b_apply):
-            row.addWidget(w)
-        return row_w
+        ctl.addWidget(b_apply)
+        right.addLayout(ctl)
+        right.addStretch()
+        h.addLayout(right, 1)
+        return panel
 
     # ---------- actions ----------
     def _pick_all(self):

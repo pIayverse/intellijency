@@ -17,6 +17,7 @@ from .keymap import ROWS
 from .widgets import RotaryKnob
 from .pc_rgb import PcLightingPage
 from .general_rgb import GeneralLightingPage, load_calibration, follow_hue
+from . import startup
 
 DARK_STYLE = """
 QWidget { background-color: #121318; color: #e2e2e9; font-family: "Inter", "Roboto", "Segoe UI", sans-serif; font-size: 13px; }
@@ -401,6 +402,7 @@ class AjazzWindow(QWidget):
         self.stack.addWidget(self._build_dks_tab())
         self.pc_page = PcLightingPage(self._pc_pick_color, self._log)
         self.pc_page.kb_apply, self.pc_page.kb_now = self._kb_apply_simple, self._kb_now
+        self.pc_page.sync_now = lambda: self.general_page.sync_now() if hasattr(self, 'general_page') else (None, set())
         self.stack.addWidget(self.pc_page)
         self.general_page = GeneralLightingPage(self.pc_page, self._pc_pick_color, self._kb_apply_simple, self._kb_now, self._log)
         self.stack.addWidget(self.general_page)
@@ -531,6 +533,13 @@ class AjazzWindow(QWidget):
         self.chk_pro.setToolTip("Fine-tune every depth and sensitivity dial in 0.01 mm steps")
         self.chk_pro.toggled.connect(self._toggle_pro_mode)
         lay.addWidget(self.chk_pro)
+        lay.addSpacing(8)
+        self.chk_start = QCheckBox("Start with Windows")
+        self.chk_start.setStyleSheet("QCheckBox { spacing: 8px; color: #a9acb8; font-weight: 500; padding-left: 20px; }")
+        self.chk_start.setToolTip("Open Intellijency minimised when you sign in, so synced lighting keeps running")
+        self.chk_start.setChecked(startup.is_enabled())
+        self.chk_start.toggled.connect(startup.set_enabled)
+        lay.addWidget(self.chk_start)
         return side
 
     def _switch_page(self, idx: int):

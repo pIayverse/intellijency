@@ -1,5 +1,7 @@
-name: Build Windows Release
+name: Build and release Intellijency
 
+# Push a tag like v1.2.0 to build the Windows installer and publish it as a GitHub release.
+# Installed apps check these releases at startup and update themselves (Velopack).
 on:
   push:
     tags:
@@ -8,6 +10,9 @@ on:
 
 permissions:
   contents: write
+
+env:
+  VELOPACK_VERSION: '1.2.161'  # keep the vpk tool and the velopack Python package on the same version
 
 jobs:
   build-windows:
@@ -24,16 +29,42 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install PySide6 hidapi pyinstaller pillow
+          pip install PySide6 hidapi openrgb-python "velopack==${{ env.VELOPACK_VERSION }}" pyinstaller
 
-      - name: Build AjazzControl.exe
+      - name: Version from tag
+        id: ver
+        shell: bash
         run: |
-          pyinstaller --noconsole --onefile --clean --icon assets\\intellijency-logo.ico --add-data "assets;assets" --name "AjazzControl" main.py
-          certutil -hashfile dist\AjazzControl.exe SHA256 > dist\AjazzControl.exe.sha256
+          v="${GITHUB_REF_NAME#v}"
+          if [[ ! "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then v="0.0.0-dev"; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release
+      - name: Build app folder (PyInstaller onedir, required by Velopack)
+        run: >
+          pyinstaller --noconfirm --clean --onedir --windowed
+          --name Intellijency
+          --icon assets\intellijency-logo.ico
+          --add-data "assets;assets"
+          --add-data "ajazz_app\chevron.svg;ajazz_app"
+          --add-data "ajazz_app\check.svg;ajazz_app"
+          main.py
+
+      - name: Install vpk
+        run: dotnet tool install -g vpk --version ${{ env.VELOPACK_VERSION }}
+
+      - name: Download previous release (for small delta updates)
+        continue-on-error: true  # the first release has nothing to download
+        run: vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pack installer
+        run: >
+          vpk pack --packId Intellijency --packVersion ${{ steps.ver.outputs.version }}
+          --packDir dist\Intellijency --mainExe Intellijency.exe
+          --icon assets\intellijency-logo.ico --packTitle Intellijency --packAuthors pIayverse
+
+      - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/')
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "${{ github.ref_name }}" dist\AjazzControl.exe dist\AjazzControl.exe.sha256 --title "${{ github.ref_name }}" --generate-notes
+        run: >
+          vpk upload github --repoUrl https://github.com/${{ github.repository }}
+          --token ${{ secrets.GITHUB_TOKEN }} --publish
+          --releaseName "Intellijency ${{ steps.ver.outputs.version }}" --tag ${{ github.ref_name }}

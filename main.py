@@ -1,17 +1,51 @@
 import sys
 import traceback
 import os
-from PySide6.QtCore import QTimer
+
+if __name__ == "__main__":
+    try:
+        import velopack
+        velopack.App().run()  # must run first: handles install / update / uninstall hooks and may exit
+    except ImportError:
+        pass  # running from source without velopack
+
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox
 from ajazz_app.gui import AjazzWindow
+from ajazz_app.updater import Updater, current_version
+
+CRASH_LOG = os.path.join(os.path.expanduser("~/.config/ajazz_studio"), "crash.log")
+
 
 def handle_exception(exc_type, exc_value, exc_tb):
     err_text = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
     print("\n=== CRASH LOG ===\n", err_text)
-    with open("crash.log", "w", encoding="utf-8") as f:
-        f.write(err_text)
+    try:  # the app folder may be read-only (installed, or started by Windows), so log to the settings folder
+        os.makedirs(os.path.dirname(CRASH_LOG), exist_ok=True)
+        with open(CRASH_LOG, "w", encoding="utf-8") as f:
+            f.write(err_text)
+    except OSError:
+        pass
     QMessageBox.critical(None, "Application error", err_text)
+
+
+def offer_update(win, updater, version):
+    if win.isMinimized():  # started with Windows: don't pop up, just install when the app closes
+        updater.apply_on_exit()
+        return
+    box = QMessageBox(win)
+    box.setWindowTitle("Update ready")
+    box.setText(f"Intellijency {version} has been downloaded.")
+    box.setInformativeText("Restart now to use it, or it will be installed when you close the app.")
+    now = box.addButton("Restart now", QMessageBox.AcceptRole)
+    box.addButton("Later", QMessageBox.RejectRole)
+    box.exec()
+    if box.clickedButton() is now:
+        updater.restart_now()
+    else:
+        updater.apply_on_exit()
+
 
 sys.excepthook = handle_exception
 
@@ -27,10 +61,17 @@ if __name__ == "__main__":
             break
     app.setStyle("Fusion")
     win = AjazzWindow()
+    version = current_version()
+    if version:
+        win.setWindowTitle(f"Intellijency {version}")
     win.move(app.primaryScreen().availableGeometry().center() - win.rect().center())  # open centred, fully on screen
-    if "--minimized" in sys.argv:  # used by the Windows startup shortcut
+    if "--minimized" in sys.argv:  # used by Start with Windows
         win.showMinimized()
     else:
         win.show()
     QTimer.singleShot(1500, win.general_page.resume)  # restart a synced effect that was running last time
+    updater = Updater()
+    # queued: `ready` is emitted from the download thread, the dialog must open on the UI thread
+    updater.ready.connect(lambda v: offer_update(win, updater, v), Qt.QueuedConnection)
+    QTimer.singleShot(4000, updater.start)  # check GitHub for a newer version once the app has settled
     sys.exit(app.exec())
