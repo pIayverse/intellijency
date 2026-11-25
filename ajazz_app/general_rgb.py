@@ -44,9 +44,9 @@ def follow_hue(cal, seconds_since_restart):
     t = seconds_since_restart - (cal["first_red"] - REACTION_S)
     return (cal["direction"] * t / cal["period"]) % 1.0
 
-PILL = ("QPushButton { background-color: #ff8c1a; color: #1a1205; font-weight: 700; border: 1px solid #ff8c1a; "
-        "border-radius: 17px; padding: 8px 24px; } QPushButton:hover { background-color: #ffa64d; } "
-        "QPushButton:disabled { background-color: #1f2238; border-color: #2f3352; color: #5f6368; }")
+PILL = ("QPushButton { background-color: #7c5cff; color: #ffffff; font-weight: 700; border: 1px solid #7c5cff; "
+        "border-radius: 17px; padding: 8px 24px; } QPushButton:hover { background-color: #9378ff; } "
+        "QPushButton:disabled { background-color: #16171d; border-color: #282a35; color: #5f6368; }")
 SECTION = "color: #c4c6d0; font-size: 12px; font-weight: 700;"
 
 
@@ -124,7 +124,7 @@ class GeneralLightingPage(QWidget):
 
         line = QFrame()
         line.setFixedHeight(1)
-        line.setStyleSheet("border: none; background-color: #2f3352;")
+        line.setStyleSheet("border: none; background-color: #282a35;")
         lay.addSpacing(6)
         lay.addWidget(line)
         lay.addSpacing(6)
@@ -153,7 +153,7 @@ class GeneralLightingPage(QWidget):
     def _row(self, key, name, kind, colour, now_text):
         w = QFrame()
         w.setObjectName("devrow")
-        w.setStyleSheet("QFrame#devrow { background-color: #262a45; border: 1px solid #2f3352; border-radius: 10px; }")
+        w.setStyleSheet("QFrame#devrow { background-color: #1d1f27; border: 1px solid #282a35; border-radius: 10px; }")
         r = QHBoxLayout(w)
         r.setContentsMargins(12, 8, 12, 8)
         r.setSpacing(10)

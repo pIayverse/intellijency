@@ -47,16 +47,16 @@ class _MaterialDial(QWidget):
         rect = QRectF(10, 10, 68, 68)
         ratio = (self.val_i - self.min_i) / max(1, (self.max_i - self.min_i))
         enabled = self.isEnabled()
-        accent = QColor("#ff8c1a") if enabled else QColor("#4d5380")
+        accent = QColor("#7c5cff") if enabled else QColor("#4b4e5b")
 
-        p.setPen(QPen(QColor("#333861"), 6, Qt.SolidLine, Qt.RoundCap))
+        p.setPen(QPen(QColor("#2e303c"), 6, Qt.SolidLine, Qt.RoundCap))
         p.drawArc(rect, 225 * 16, -270 * 16)
 
         p.setPen(QPen(accent, 6, Qt.SolidLine, Qt.RoundCap))
         p.drawArc(rect, 225 * 16, int(-270 * ratio * 16))
 
-        p.setPen(QPen(QColor("#444a75") if enabled else QColor("#333861"), 1.5))
-        p.setBrush(QColor("#262a45") if enabled else QColor("#202339"))
+        p.setPen(QPen(QColor("#41444f") if enabled else QColor("#2e303c"), 1.5))
+        p.setBrush(QColor("#1d1f27") if enabled else QColor("#17181f"))
         p.drawEllipse(QRectF(20, 20, 48, 48))
 
         angle_rad = math.radians(225 - 270 * ratio)

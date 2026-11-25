@@ -21,7 +21,7 @@ if __name__ == "__main__":
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Intellijency.App")
     app = QApplication(sys.argv)
     _bd = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-    for _p in (os.path.join(_bd, "assets", "intellijency.ico"), os.path.join(_bd, "intellijency.ico"), os.path.join(_bd, "assets", "icon.png"), os.path.join(_bd, "icon.png")):
+    for _p in (os.path.join(_bd, "assets", "intellijency-logo.ico"), os.path.join(_bd, "intellijency-logo.ico"), os.path.join(_bd, "assets", "icon.png"), os.path.join(_bd, "icon.png")):
         if os.path.exists(_p):
             app.setWindowIcon(QIcon(_p))
             break

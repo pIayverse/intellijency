@@ -19,49 +19,49 @@ from .pc_rgb import PcLightingPage
 from .general_rgb import GeneralLightingPage
 
 DARK_STYLE = """
-QWidget { background-color: #1b1d31; color: #e2e2e9; font-family: "Inter", "Roboto", "Segoe UI", sans-serif; font-size: 13px; }
-QFrame#sidebar { background-color: #202339; border-right: 1px solid #2f3352; }
-QPushButton#nav_btn { background: transparent; border: none; border-radius: 8px; padding: 8px 12px; margin: 1px 8px; text-align: left; font-size: 13px; font-weight: 500; color: #a7acbf; }
+QWidget { background-color: #121318; color: #e2e2e9; font-family: "Inter", "Roboto", "Segoe UI", sans-serif; font-size: 13px; }
+QFrame#sidebar { background-color: #17181f; border-right: 1px solid #282a35; }
+QPushButton#nav_btn { background: transparent; border: none; border-radius: 8px; padding: 8px 12px; margin: 1px 8px; text-align: left; font-size: 13px; font-weight: 500; color: #a9acb8; }
 QPushButton#nav_btn:hover { background-color: rgba(255, 255, 255, 0.05); color: #ffffff; }
-QPushButton#nav_btn:checked { background-color: rgba(255, 140, 26, 0.13); color: #ffb366; font-weight: 600; }
-QPushButton { background-color: #282c48; border: 1px solid #3a3f66; border-radius: 8px; padding: 6px 12px; color: #e2e2e9; font-weight: 500; }
-QPushButton:hover { background-color: #333861; border-color: #ff8c1a; }
-QPushButton#keycap { background-color: #262a45; border: 1px solid #3a3f66; border-bottom: 2px solid #121424; border-radius: 6px; padding: 0px; font-size: 11px; font-weight: 500; color: #d5d8e2; }
-QPushButton#keycap:hover { border-color: #ff8c1a; background-color: #31365a; color: #ffffff; }
-QPushButton#primary { background-color: #ff8c1a; color: #1a1205; font-weight: 700; border: none; border-radius: 18px; padding: 9px 24px; }
-QPushButton#primary:hover { background-color: #ffa64d; }
-QFrame#card { background-color: #202339; border: 1px solid #2f3352; border-radius: 16px; }
-QLabel#card_title { color: #ff8c1a; font-size: 13px; font-weight: 700; padding-bottom: 6px; }
+QPushButton#nav_btn:checked { background-color: rgba(124, 92, 255, 0.16); color: #c3b5ff; font-weight: 600; }
+QPushButton { background-color: #20222b; border: 1px solid #363846; border-radius: 8px; padding: 6px 12px; color: #e2e2e9; font-weight: 500; }
+QPushButton:hover { background-color: #2e303c; border-color: #7c5cff; }
+QPushButton#keycap { background-color: #1d1f27; border: 1px solid #363846; border-bottom: 2px solid #0e0f14; border-radius: 6px; padding: 0px; font-size: 11px; font-weight: 500; color: #d5d8e2; }
+QPushButton#keycap:hover { border-color: #7c5cff; background-color: #2b2d39; color: #ffffff; }
+QPushButton#primary { background-color: #7c5cff; color: #ffffff; font-weight: 700; border: none; border-radius: 18px; padding: 9px 24px; }
+QPushButton#primary:hover { background-color: #9378ff; }
+QFrame#card { background-color: #17181f; border: 1px solid #282a35; border-radius: 16px; }
+QLabel#card_title { color: #9d86ff; font-size: 13px; font-weight: 700; padding-bottom: 6px; }
 QComboBox { combobox-popup: 0; }
-QComboBox, QListWidget { background-color: #282c48; border: 1px solid #3a3f66; border-radius: 8px; padding: 6px 28px 6px 12px; color: #e2e2e9; selection-background-color: #4a2e12; selection-color: #ffb366; }
-QComboBox:disabled, QPushButton:disabled, QPushButton#primary:disabled { background-color: #1f2238; border: 1px solid #2f3352; color: #5f6368; }
+QComboBox, QListWidget { background-color: #20222b; border: 1px solid #363846; border-radius: 8px; padding: 6px 28px 6px 12px; color: #e2e2e9; selection-background-color: #2a2350; selection-color: #c3b5ff; }
+QComboBox:disabled, QPushButton:disabled, QPushButton#primary:disabled { background-color: #16171d; border: 1px solid #282a35; color: #5f6368; }
 QCheckBox { spacing: 8px; }
-QCheckBox::indicator { width: 17px; height: 17px; border-radius: 5px; border: 1.5px solid #4d5380; background-color: #282c48; }
-QCheckBox::indicator:hover { border-color: #ff8c1a; }
-QCheckBox::indicator:checked { background-color: #ff8c1a; border-color: #ff8c1a; }
-QCheckBox::indicator:disabled { background-color: #202339; border-color: #2f3352; }
-QDialog, QMessageBox, QInputDialog { background-color: #1e2035; color: #e2e2e9; dialogbuttonbox-buttons-have-icons: 0; }
-QComboBox:hover, QListWidget:hover { border-color: #ff8c1a; background-color: #30345a; }
-QComboBox:on { border-color: #ff8c1a; border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; }
+QCheckBox::indicator { width: 17px; height: 17px; border-radius: 5px; border: 1.5px solid #4b4e5b; background-color: #20222b; }
+QCheckBox::indicator:hover { border-color: #7c5cff; }
+QCheckBox::indicator:checked { background-color: #7c5cff; border-color: #7c5cff; }
+QCheckBox::indicator:disabled { background-color: #17181f; border-color: #282a35; }
+QDialog, QMessageBox, QInputDialog { background-color: #15161c; color: #e2e2e9; dialogbuttonbox-buttons-have-icons: 0; }
+QComboBox:hover, QListWidget:hover { border-color: #7c5cff; background-color: #2a2c38; }
+QComboBox:on { border-color: #7c5cff; border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; }
 QComboBox::drop-down { subcontrol-origin: padding; subcontrol-position: top right; width: 26px; border: none; background: transparent; }
 QComboBox::down-arrow { image: url("/home/chyo/.config/ajazz_studio/chevron.svg"); width: 12px; height: 12px; }
 QComboBoxPrivateContainer { background-color: transparent; border: none; }
-QComboBox QAbstractItemView { background-color: #1f2238; border: 1px solid #ff8c1a; border-top: none; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; padding: 4px; color: #e2e2e9; outline: none; }
+QComboBox QAbstractItemView { background-color: #16171d; border: 1px solid #7c5cff; border-top: none; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; padding: 4px; color: #e2e2e9; outline: none; }
 QComboBox QAbstractItemView::item { min-height: 28px; padding: 4px 10px; border-radius: 6px; }
-QComboBox QAbstractItemView::item:hover { background-color: #31365a; color: #ffffff; }
-QComboBox QAbstractItemView::item:selected { background-color: #4a2e12; color: #ffb366; font-weight: 600; }
-QScrollBar:vertical { background: #202339; width: 8px; border-radius: 4px; margin: 2px; }
-QScrollBar::handle:vertical { background: #444a75; border-radius: 4px; min-height: 24px; }
-QScrollBar::handle:vertical:hover { background: #ff8c1a; }
+QComboBox QAbstractItemView::item:hover { background-color: #2b2d39; color: #ffffff; }
+QComboBox QAbstractItemView::item:selected { background-color: #2a2350; color: #c3b5ff; font-weight: 600; }
+QScrollBar:vertical { background: #17181f; width: 8px; border-radius: 4px; margin: 2px; }
+QScrollBar::handle:vertical { background: #41444f; border-radius: 4px; min-height: 24px; }
+QScrollBar::handle:vertical:hover { background: #7c5cff; }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
-QScrollBar:horizontal { background: #202339; height: 8px; border-radius: 4px; margin: 2px; }
-QScrollBar::handle:horizontal { background: #444a75; border-radius: 4px; min-width: 24px; }
-QScrollBar::handle:horizontal:hover { background: #ff8c1a; }
+QScrollBar:horizontal { background: #17181f; height: 8px; border-radius: 4px; margin: 2px; }
+QScrollBar::handle:horizontal { background: #41444f; border-radius: 4px; min-width: 24px; }
+QScrollBar::handle:horizontal:hover { background: #7c5cff; }
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0px; }
 QScrollArea, QScrollArea > QWidget > QWidget { background: transparent; }
 QCheckBox { spacing: 8px; color: #e2e2e9; font-weight: 500; background: transparent; }
 QCheckBox::indicator { width: 18px; height: 18px; border-radius: 4px; border: 2px solid #8e9099; background: transparent; }
-QCheckBox::indicator:checked { background: #ff8c1a; border-color: #ff8c1a; }
+QCheckBox::indicator:checked { background: #7c5cff; border-color: #7c5cff; }
 QLabel { background: transparent; }
 QCheckBox::indicator:checked { image: url("__CHECK_SVG__"); }
 """
@@ -86,7 +86,7 @@ def nav_icon(kind: str) -> QIcon:
         elif kind == "switch":
             for y, x in ((4.5, 6), (9, 12), (13.5, 8)):
                 p.drawLine(QPointF(2.5, y), QPointF(15.5, y))
-                p.setBrush(QColor("#202339")); p.drawEllipse(QPointF(x, y), 1.9, 1.9); p.setBrush(Qt.NoBrush)
+                p.setBrush(QColor("#17181f")); p.drawEllipse(QPointF(x, y), 1.9, 1.9); p.setBrush(Qt.NoBrush)
         elif kind == "socd":
             p.drawLine(QPointF(3, 6), QPointF(15, 6)); p.drawLine(QPointF(12, 3), QPointF(15, 6)); p.drawLine(QPointF(12, 9), QPointF(15, 6))
             p.drawLine(QPointF(3, 12), QPointF(15, 12)); p.drawLine(QPointF(6, 9), QPointF(3, 12)); p.drawLine(QPointF(6, 15), QPointF(3, 12))
@@ -115,10 +115,10 @@ def nav_icon(kind: str) -> QIcon:
         pm.setDevicePixelRatio(2)
         return pm
     ic = QIcon()
-    ic.addPixmap(draw("#8c92aa"), QIcon.Normal, QIcon.Off)
+    ic.addPixmap(draw("#8a8d99"), QIcon.Normal, QIcon.Off)
     ic.addPixmap(draw("#ffffff"), QIcon.Active, QIcon.Off)
-    ic.addPixmap(draw("#ff8c1a"), QIcon.Normal, QIcon.On)
-    ic.addPixmap(draw("#ff8c1a"), QIcon.Active, QIcon.On)
+    ic.addPixmap(draw("#7c5cff"), QIcon.Normal, QIcon.On)
+    ic.addPixmap(draw("#7c5cff"), QIcon.Active, QIcon.On)
     return ic
 
 class HintList(QListWidget):
@@ -154,8 +154,8 @@ class ColorPickerDialog(QDialog):
         self.setWindowTitle(t["color_title"])
         base_dir = getattr(sys, "_MEIPASS", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         for ic_path in (
-            os.path.join(base_dir, "assets", "intellijency.ico"),
-            os.path.join(base_dir, "intellijency.ico"),
+            os.path.join(base_dir, "assets", "intellijency-logo.ico"),
+            os.path.join(base_dir, "intellijency-logo.ico"),
             os.path.join(base_dir, "assets", "icon.png"),
             os.path.join(base_dir, "icon.png"),
             os.path.join(base_dir, "assets", "icon.svg"),
@@ -181,10 +181,10 @@ class ColorPickerDialog(QDialog):
         self.hex_edit = QLineEdit()
         self.hex_edit.setMaxLength(7)
         self.hex_edit.setFixedWidth(110)
-        self.hex_edit.setPlaceholderText("#FF8C1A")
-        self.hex_edit.setToolTip("Type a hex colour code, e.g. #FF8C1A")
+        self.hex_edit.setPlaceholderText("#7c5cff")
+        self.hex_edit.setToolTip("Type a hex colour code, e.g. #7c5cff")
         self.hex_edit.setValidator(QRegularExpressionValidator(QRegularExpression("#?[0-9A-Fa-f]{0,6}"), self.hex_edit))
-        self.hex_edit.setStyleSheet("QLineEdit { background-color: #282c48; border: 1px solid #3a3f66; border-radius: 8px; padding: 6px 10px; font-size: 15px; font-weight: 700; color: #e2e2e9; } QLineEdit:focus { border-color: #ff8c1a; }")
+        self.hex_edit.setStyleSheet("QLineEdit { background-color: #20222b; border: 1px solid #363846; border-radius: 8px; padding: 6px 10px; font-size: 15px; font-weight: 700; color: #e2e2e9; } QLineEdit:focus { border-color: #7c5cff; }")
         self.hex_edit.textEdited.connect(self._on_hex)
         hex_lbl = QLabel("Hex")
         hex_lbl.setStyleSheet("color: #9aa0a6;")
@@ -207,7 +207,7 @@ class ColorPickerDialog(QDialog):
         for hx in ("#ff0000", "#ff6d00", "#ffd600", "#76ff03", "#00e676", "#00e5ff", "#0000ff", "#651fff", "#d500f9", "#ff4081", "#ffffff"):
             b = QPushButton()
             b.setFixedSize(24, 24)
-            b.setStyleSheet(f"QPushButton {{ background-color: {hx}; border-radius: 12px; border: 1.5px solid #3a3f66; padding: 0; }} QPushButton:hover {{ border-color: #ffffff; }}")
+            b.setStyleSheet(f"QPushButton {{ background-color: {hx}; border-radius: 12px; border: 1.5px solid #363846; padding: 0; }} QPushButton:hover {{ border-color: #ffffff; }}")
             b.clicked.connect(lambda _, c=hx: self._set_preset(QColor(c)))
             presets.addWidget(b)
         lay.addLayout(presets)
@@ -294,7 +294,7 @@ class ColorPickerDialog(QDialog):
         pt.setPen(Qt.NoPen)
         pt.drawRoundedRect(0, 2, w, h - 4, 8, 8)
         sx = int((self._sat / 255.0) * (w - 12)) + 6
-        pt.setPen(QPen(QColor("#1e2035"), 2))
+        pt.setPen(QPen(QColor("#15161c"), 2))
         pt.setBrush(self.color)
         pt.drawEllipse(sx - 6, 3, 12, 12)
         pt.end()
@@ -394,7 +394,7 @@ class AjazzWindow(QWidget):
         self.btn_rst.setStyleSheet("QPushButton { background-color: transparent; border: 1px solid #f28b82; color: #f28b82; font-weight: 600; border-radius: 17px; padding: 8px 20px; } QPushButton:hover { background-color: #3b1d1e; }")
         self.btn_rst.clicked.connect(self._on_factory_reset)
         self.btn_apply_all = QPushButton("Apply")
-        self.btn_apply_all.setStyleSheet("QPushButton { background-color: #ff8c1a; color: #1a1205; font-weight: 700; border: 1px solid #ff8c1a; border-radius: 17px; padding: 8px 30px; } QPushButton:hover { background-color: #ffa64d; }")
+        self.btn_apply_all.setStyleSheet("QPushButton { background-color: #7c5cff; color: #ffffff; font-weight: 700; border: 1px solid #7c5cff; border-radius: 17px; padding: 8px 30px; } QPushButton:hover { background-color: #9378ff; }")
         self.btn_apply_all.clicked.connect(self._apply_current_tab)
         uni_bar.addWidget(self.btn_rst)
         uni_bar.addStretch()
@@ -455,7 +455,7 @@ class AjazzWindow(QWidget):
         name = QLabel("Intellijency")
         name.setStyleSheet("color: #f4f5fb; font-size: 15px; font-weight: 800;")
         model = QLabel("AK820 Max HE")
-        model.setStyleSheet("color: #8c92aa; font-size: 11px; font-weight: 500;")
+        model.setStyleSheet("color: #8a8d99; font-size: 11px; font-weight: 500;")
         names.addWidget(name)
         names.addWidget(model)
         brand.addLayout(names)
@@ -464,7 +464,7 @@ class AjazzWindow(QWidget):
 
         def group(title):
             g = QLabel(title)
-            g.setStyleSheet("color: #6f7596; font-size: 11px; font-weight: 700; padding: 0 20px;")
+            g.setStyleSheet("color: #6b6e7a; font-size: 11px; font-weight: 700; padding: 0 20px;")
             lay.addSpacing(18)
             lay.addWidget(g)
             lay.addSpacing(6)
@@ -496,12 +496,12 @@ class AjazzWindow(QWidget):
 
         sep = QFrame()
         sep.setFixedHeight(1)
-        sep.setStyleSheet("border: none; background-color: #2a2e4a;")
+        sep.setStyleSheet("border: none; background-color: #23252f;")
         lay.addWidget(sep)
         lay.addSpacing(12)
 
         self.chk_pro = QCheckBox("Jeweler Mode (0.01 mm)")
-        self.chk_pro.setStyleSheet("QCheckBox { spacing: 8px; color: #a7acbf; font-weight: 500; padding-left: 20px; }")
+        self.chk_pro.setStyleSheet("QCheckBox { spacing: 8px; color: #a9acb8; font-weight: 500; padding-left: 20px; }")
         self.chk_pro.setToolTip("Fine-tune every depth and sensitivity dial in 0.01 mm steps")
         self.chk_pro.toggled.connect(self._toggle_pro_mode)
         lay.addWidget(self.chk_pro)
@@ -613,7 +613,7 @@ class AjazzWindow(QWidget):
         self._kb_units = max(sum(k[1] for k in row) for row in ROWS)
         chassis = QFrame()
         chassis.setObjectName("chassis")
-        chassis.setStyleSheet("QFrame#chassis { background-color: #111322; border: 1px solid #333861; border-radius: 14px; }")
+        chassis.setStyleSheet("QFrame#chassis { background-color: #0c0d11; border: 1px solid #2e303c; border-radius: 14px; }")
         c_lay = QVBoxLayout(chassis)
         c_lay.setContentsMargins(12, 12, 12, 12)
         c_lay.setSpacing(GAP)
@@ -776,11 +776,11 @@ class AjazzWindow(QWidget):
             if self.is_calibrating and s in self.calibrated_slots:
                 b.setStyleSheet("QPushButton#keycap { background-color: #244a32; border: 1.5px solid #81c995; color: #81c995; font-weight: 700; }")
             elif s in self.pressed_slots:
-                b.setStyleSheet("QPushButton#keycap { background-color: #ff8c1a; border: 1px solid #ffffff; color: #1a1205; font-weight: 800; }")
+                b.setStyleSheet("QPushButton#keycap { background-color: #7c5cff; border: 1px solid #ffffff; color: #ffffff; font-weight: 800; }")
             elif s in adv_slots or (self.stack.currentIndex() == 3 and s in layer_map and s != self.selected_slot) or (self.stack.currentIndex() == 5 and self.dks_target and s == self.dks_target):
                 b.setStyleSheet("QPushButton#keycap { background-color: #3a2d19; border: 1.5px solid #ffb74d; color: #ffb74d; font-weight: 700; }")
             elif s == self.selected_slot:
-                b.setStyleSheet("QPushButton#keycap { background-color: #262a45; border: 1.5px solid #ff8c1a; color: #ff8c1a; font-weight: 700; }")
+                b.setStyleSheet("QPushButton#keycap { background-color: #1d1f27; border: 1.5px solid #7c5cff; color: #7c5cff; font-weight: 700; }")
             else:
                 g = self._key_glow(s)
                 b.setStyleSheet("" if g is None else
@@ -966,7 +966,7 @@ class AjazzWindow(QWidget):
 
         self.btn_color = QPushButton("Pick Color")
         self.btn_color.setIconSize(QSize(14, 14))
-        self.btn_color.setStyleSheet("QPushButton:disabled { background-color: #202339; border-color: #2f3352; color: #5f6368; }")
+        self.btn_color.setStyleSheet("QPushButton:disabled { background-color: #17181f; border-color: #282a35; color: #5f6368; }")
         self.btn_color.setToolTip("Set a static color (disabled in rainbow mode)")
         self._set_color_icon(QColor(255, 0, 0))
         self.cb_effect.currentIndexChanged.connect(self._upd_light_ui)
@@ -1068,7 +1068,7 @@ class AjazzWindow(QWidget):
 
         hline = QFrame()
         hline.setFixedHeight(1)
-        hline.setStyleSheet("border: none; background-color: #2f3352;")
+        hline.setStyleSheet("border: none; background-color: #282a35;")
         lay.addSpacing(4)
         lay.addWidget(hline)
 
@@ -1196,7 +1196,7 @@ class AjazzWindow(QWidget):
         top.setSpacing(10)
         self.btn_adv_pick = QPushButton("Select Keys")
         self.btn_adv_pick.setCheckable(True)
-        self.btn_adv_pick.setStyleSheet("QPushButton:checked { background-color: #4a2e12; border: 1.5px solid #ff8c1a; color: #ffffff; font-weight: 700; }")
+        self.btn_adv_pick.setStyleSheet("QPushButton:checked { background-color: #2a2350; border: 1.5px solid #7c5cff; color: #ffffff; font-weight: 700; }")
         self.btn_adv_pick.setToolTip("Click, then press the two keys one after another (or click them on the layout)")
         self.btn_adv_pick.clicked.connect(self._start_adv_pick)
         self.lbl_adv_pair = QLabel("Set: A + D")
@@ -1306,7 +1306,7 @@ class AjazzWindow(QWidget):
 
         self.btn_cust_pick = QPushButton("Select Keys")
         self.btn_cust_pick.setCheckable(True)
-        self.btn_cust_pick.setStyleSheet("QPushButton:checked { background-color: #4a2e12; border: 1.5px solid #ff8c1a; color: #ffffff; font-weight: 700; }")
+        self.btn_cust_pick.setStyleSheet("QPushButton:checked { background-color: #2a2350; border: 1.5px solid #7c5cff; color: #ffffff; font-weight: 700; }")
         self.btn_cust_pick.setToolTip("Click, then press the target key and then its new value")
         self.btn_cust_pick.clicked.connect(self._start_cust_pick)
         row.addWidget(self.btn_cust_pick)
@@ -1413,7 +1413,7 @@ class AjazzWindow(QWidget):
 
         self.btn_mac_target = QPushButton("Select Key")
         self.btn_mac_target.setCheckable(True)
-        self.btn_mac_target.setStyleSheet("QPushButton:checked { background-color: #4a2e12; border: 1.5px solid #ff8c1a; color: #ffffff; font-weight: 700; }")
+        self.btn_mac_target.setStyleSheet("QPushButton:checked { background-color: #2a2350; border: 1.5px solid #7c5cff; color: #ffffff; font-weight: 700; }")
         self.btn_mac_target.setToolTip("Click, then press the key that should trigger the macro")
         self.btn_mac_target.clicked.connect(self._toggle_mac_target)
         row.addWidget(self.btn_mac_target)
@@ -1529,14 +1529,14 @@ class AjazzWindow(QWidget):
 
         self.btn_dks_target = QPushButton("Select Key")
         self.btn_dks_target.setCheckable(True)
-        self.btn_dks_target.setStyleSheet("QPushButton:checked { background-color: #4a2e12; border: 1.5px solid #ff8c1a; color: #ffffff; font-weight: 700; }")
+        self.btn_dks_target.setStyleSheet("QPushButton:checked { background-color: #2a2350; border: 1.5px solid #7c5cff; color: #ffffff; font-weight: 700; }")
         self.btn_dks_target.setToolTip("Click, then press the key to set up DKS for")
         self.btn_dks_target.clicked.connect(self._toggle_dks_target)
         top.addWidget(self.btn_dks_target)
 
         self.btn_dks_add = QPushButton("Add Keys")
         self.btn_dks_add.setCheckable(True)
-        self.btn_dks_add.setStyleSheet("QPushButton:checked { background-color: #4a2e12; border: 1.5px solid #ff8c1a; color: #ffffff; font-weight: 700; }")
+        self.btn_dks_add.setStyleSheet("QPushButton:checked { background-color: #2a2350; border: 1.5px solid #7c5cff; color: #ffffff; font-weight: 700; }")
         self.btn_dks_add.setToolTip("Assign up to 4 keys to travel points 1-4 by pressing them")
         self.btn_dks_add.clicked.connect(self._toggle_dks_add)
         top.addWidget(self.btn_dks_add)
@@ -1562,7 +1562,7 @@ class AjazzWindow(QWidget):
             kb.setToolTip(f"Press depth (mm) for DKS point {idx+1}")
             btn = QPushButton(f"Point {idx+1}: —")
             btn.setCheckable(True)
-            btn.setStyleSheet("QPushButton:checked { background-color: #4a2e12; border: 1.5px solid #ff8c1a; color: #ffffff; font-weight: 700; }")
+            btn.setStyleSheet("QPushButton:checked { background-color: #2a2350; border: 1.5px solid #7c5cff; color: #ffffff; font-weight: 700; }")
             btn.setToolTip("Click, then press the key to assign to this travel point")
             btn.clicked.connect(lambda chk, i=idx: self._toggle_dks_point(i, chk))
             col.addWidget(kb)
@@ -1671,7 +1671,7 @@ class AjazzWindow(QWidget):
         self.btn_apply_all.setText(t["btn_written"] if ok else t["no_conn"])
         self.btn_apply_all.setStyleSheet("QPushButton { background-color: #81c995; color: #062e16; font-weight: 600; border: 1px solid #81c995; border-radius: 18px; padding: 9px 24px; }" if ok else "QPushButton { background-color: #f28b82; color: #3c0806; font-weight: 600; border: 1px solid #f28b82; border-radius: 18px; padding: 9px 24px; }")
         self._log(t["log_apply_all"] if ok else t["log_err"], ok)
-        QTimer.singleShot(1600, lambda: (self.btn_apply_all.setText(t["btn_apply_all"]), self.btn_apply_all.setStyleSheet("QPushButton { background-color: #ff8c1a; color: #1a1205; font-weight: 600; border: 1px solid #ff8c1a; border-radius: 18px; padding: 9px 24px; } QPushButton:hover { background-color: #ffa64d; }")))
+        QTimer.singleShot(1600, lambda: (self.btn_apply_all.setText(t["btn_apply_all"]), self.btn_apply_all.setStyleSheet("QPushButton { background-color: #7c5cff; color: #ffffff; font-weight: 600; border: 1px solid #7c5cff; border-radius: 18px; padding: 9px 24px; } QPushButton:hover { background-color: #9378ff; }")))
 
     def _set_lang(self, lang: str, save: bool = True):
         self.lang = lang if lang in STRINGS else "en"

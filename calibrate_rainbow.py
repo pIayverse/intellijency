@@ -26,9 +26,9 @@ class Calib(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Rainbow calibration")
-        self.setStyleSheet("QWidget { background: #1b1d31; color: #e2e2e9; font-size: 14px; } "
-                           "QPushButton { background: #282c48; border: 1px solid #3a3f66; border-radius: 8px; padding: 8px 16px; } "
-                           "QPushButton:hover { border-color: #ff8c1a; }")
+        self.setStyleSheet("QWidget { background: #121318; color: #e2e2e9; font-size: 14px; } "
+                           "QPushButton { background: #20222b; border: 1px solid #363846; border-radius: 8px; padding: 8px 16px; } "
+                           "QPushButton:hover { border-color: #7c5cff; }")
         self.ctrl, self.t0, self.presses, self.direction = AjazzController(), None, [], None
         lay = QVBoxLayout(self)
         lay.setContentsMargins(24, 22, 24, 22)
@@ -39,7 +39,7 @@ class Calib(QWidget):
         self.info.setWordWrap(True)
         lay.addWidget(self.info)
         self.count = QLabel("Presses: 0 / 4")
-        self.count.setStyleSheet("font-size: 22px; font-weight: 800; color: #ff8c1a;")
+        self.count.setStyleSheet("font-size: 22px; font-weight: 800; color: #7c5cff;")
         lay.addWidget(self.count)
         self.btn_start = QPushButton("Start")
         self.btn_start.clicked.connect(self.start)

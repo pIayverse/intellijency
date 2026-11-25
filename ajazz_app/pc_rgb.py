@@ -24,7 +24,7 @@ def _swatch(col: QColor, size=14) -> QIcon:
     p = QPainter(pm)
     p.setRenderHint(QPainter.Antialiasing)
     p.setBrush(col)
-    p.setPen(QColor("#4d5380"))
+    p.setPen(QColor("#4b4e5b"))
     p.drawEllipse(1, 1, size - 2, size - 2)
     p.end()
     return QIcon(pm)
@@ -40,7 +40,7 @@ def _rainbow_swatch(size=14) -> QIcon:
     for i, hx in enumerate(("#ff3d3d", "#ffd23d", "#2effa8", "#2fb8ff", "#9b5cff", "#ff3d7f", "#ff3d3d")):
         g.setColorAt(i / 6, QColor(hx))
     p.setBrush(g)
-    p.setPen(QColor("#4d5380"))
+    p.setPen(QColor("#4b4e5b"))
     p.drawEllipse(1, 1, size - 2, size - 2)
     p.end()
     return QIcon(pm)
@@ -146,14 +146,14 @@ class PcLightingPage(QWidget):
         row.addWidget(self.btn_all_col)
         row.addStretch()
         self.btn_all = QPushButton("Apply to All")
-        self.btn_all.setStyleSheet("QPushButton { background-color: #ff8c1a; color: #1a1205; font-weight: 700; border: 1px solid #ff8c1a; border-radius: 17px; padding: 8px 24px; } QPushButton:hover { background-color: #ffa64d; } QPushButton:disabled { background-color: #1f2238; border-color: #2f3352; color: #5f6368; }")
+        self.btn_all.setStyleSheet("QPushButton { background-color: #7c5cff; color: #ffffff; font-weight: 700; border: 1px solid #7c5cff; border-radius: 17px; padding: 8px 24px; } QPushButton:hover { background-color: #9378ff; } QPushButton:disabled { background-color: #16171d; border-color: #282a35; color: #5f6368; }")
         self.btn_all.clicked.connect(self.apply_all)
         row.addWidget(self.btn_all)
         lay.addLayout(row)
 
         line = QFrame()
         line.setFixedHeight(1)
-        line.setStyleSheet("border: none; background-color: #2f3352;")
+        line.setStyleSheet("border: none; background-color: #282a35;")
         lay.addSpacing(4)
         lay.addWidget(line)
 
@@ -205,7 +205,7 @@ class PcLightingPage(QWidget):
     # ---------- rows ----------
     def _device_row(self, dev):
         row_w = QFrame()
-        row_w.setStyleSheet("QFrame#devrow { background-color: #262a45; border: 1px solid #2f3352; border-radius: 10px; }")
+        row_w.setStyleSheet("QFrame#devrow { background-color: #1d1f27; border: 1px solid #282a35; border-radius: 10px; }")
         row_w.setObjectName("devrow")
         row = QHBoxLayout(row_w)
         row.setContentsMargins(12, 8, 12, 8)

@@ -28,7 +28,7 @@ jobs:
 
       - name: Build AjazzControl.exe
         run: |
-          pyinstaller --noconsole --onefile --clean --icon assets\\intellijency.ico --add-data "assets;assets" --name "AjazzControl" main.py
+          pyinstaller --noconsole --onefile --clean --icon assets\\intellijency-logo.ico --add-data "assets;assets" --name "AjazzControl" main.py
           certutil -hashfile dist\AjazzControl.exe SHA256 > dist\AjazzControl.exe.sha256
 
       - name: Create GitHub Release
