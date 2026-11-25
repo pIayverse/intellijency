@@ -510,6 +510,7 @@ class AjazzWindow(QWidget):
         brand.addWidget(name)
         brand.addStretch()
         lay.addLayout(brand)
+        lay.addSpacing(22)  # breathing room between the logo and the first nav item
 
         def group(title):
             g = QLabel(title)
