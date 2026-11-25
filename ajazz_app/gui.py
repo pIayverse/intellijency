@@ -139,7 +139,7 @@ class GlowChassis(QFrame):
             if c is None or not w.isVisible():
                 continue
             r = QRectF(w.geometry())
-            for grow, alpha in ((5.0, 40), (2.5, 100), (0.5, 200)):  # outer haze -> bright rim
+            for grow, alpha in ((3.5, 75), (0.6, 210)):  # soft haze, then bright rim
                 g = QColor(c)
                 g.setAlpha(alpha)
                 p.setBrush(g)
@@ -694,7 +694,7 @@ class AjazzWindow(QWidget):
         lay.addLayout(row_wrap)
         self._kb_rainbow_t0 = time.monotonic()  # phase unknown until the app restarts the keyboard rainbow
         self._glow_timer = QTimer(self)
-        self._glow_timer.setInterval(50)
+        self._glow_timer.setInterval(66)  # ~15 fps is smooth for slow colour fades
         self._glow_timer.timeout.connect(self._tick_glow)
         self._glow_timer.start()
         return self.kb_box
@@ -814,6 +814,9 @@ class AjazzWindow(QWidget):
 
     def _tick_glow(self):
         st = getattr(self, "_applied_light", None)
+        # only animate while someone can see it: window focused, not minimised (the hardware keeps running regardless)
+        if not self.isActiveWindow() or self.isMinimized():
+            return
         if self.kb_box.isVisible() and st and st.get("rainbow") and st.get("mode", 0) and st.get("brightness", 0):
             self.chassis.update()
 

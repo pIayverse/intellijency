@@ -132,7 +132,7 @@ class PcLightingPage(QWidget):
         self.live_colour = lambda key, state, colour: colour
         self._live_pics = []  # (label, device name, type, key, state, colour, w, h) for pictures that animate
         self._anim = QTimer(self)
-        self._anim.setInterval(80)
+        self._anim.setInterval(100)
         self._anim.timeout.connect(self._animate)
         self._anim.start()
         self.all_colour = QColor(255, 140, 26)
@@ -345,7 +345,7 @@ class PcLightingPage(QWidget):
             self._live_pics.append((label, name, type_key, key, state, colour, w, h))
 
     def _animate(self):
-        if not self.isVisible():
+        if not self.isVisible() or not self.window().isActiveWindow():
             return
         for label, name, type_key, key, state, colour, w, h in self._live_pics:
             try:

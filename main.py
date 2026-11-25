@@ -52,7 +52,9 @@ sys.excepthook = handle_exception
 if __name__ == "__main__":
     if sys.platform == "win32":
         import ctypes  # own taskbar identity, so Windows shows this app's icon instead of Python's
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Intellijency.App")
+        # same id as the installer's shortcuts, so a pinned shortcut and the running window share one taskbar icon
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            "velopack.Intellijency" if getattr(sys, "frozen", False) else "Intellijency.App")
     app = QApplication(sys.argv)
     _bd = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     for _p in (os.path.join(_bd, "assets", "intellijency-logo.ico"), os.path.join(_bd, "intellijency-logo.ico"), os.path.join(_bd, "assets", "icon.png"), os.path.join(_bd, "icon.png")):
