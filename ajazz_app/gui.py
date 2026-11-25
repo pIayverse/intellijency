@@ -5,7 +5,7 @@ from datetime import datetime
 import json
 import os
 import time
-from PySide6.QtCore import Qt, QRectF, QRegularExpression, QTimer, QEvent, QSize, Signal, QPropertyAnimation, QEasingCurve
+from PySide6.QtCore import Qt, QRectF, QPointF, QRegularExpression, QTimer, QEvent, QSize, Signal, QPropertyAnimation, QEasingCurve
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QColor, QPixmap, QPainter, QIcon, QPen, QLinearGradient, QRegularExpressionValidator, QPainterPath
 from PySide6.QtWidgets import (
@@ -17,6 +17,8 @@ from .keymap import ROWS
 from .widgets import RotaryKnob
 from .pc_rgb import PcLightingPage
 from .general_rgb import GeneralLightingPage, load_calibration, follow_hue
+from .home import HomePage
+from . import demo
 from . import startup
 
 DARK_STYLE = """
@@ -29,8 +31,8 @@ QPushButton { background-color: #20222b; border: 1px solid #363846; border-radiu
 QPushButton:hover { background-color: #2e303c; border-color: #7c5cff; }
 QPushButton#keycap { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2a2c37, stop:1 #1a1b22); border: 1px solid #34364a; border-bottom: 3px solid #0a0b0e; border-radius: 6px; padding: 0px; font-size: 11px; font-weight: 600; color: #d6d8e0; }
 QPushButton#keycap:hover { border-color: #7c5cff; background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #33354a, stop:1 #22232c); color: #ffffff; }
-QPushButton#primary { background-color: #7c5cff; color: #ffffff; font-weight: 700; border: none; border-radius: 18px; padding: 9px 24px; }
-QPushButton#primary:hover { background-color: #9378ff; }
+QPushButton#primary { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #7c5cff, stop:1 #5b8cff); color: #ffffff; font-weight: 700; border: none; border-radius: 18px; padding: 9px 24px; }
+QPushButton#primary:hover { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #9378ff, stop:1 #78a2ff); }
 QFrame#card { background-color: #17181f; border: 1px solid #282a35; border-radius: 16px; }
 QLabel#card_title { color: #9d86ff; font-size: 13px; font-weight: 700; padding-bottom: 6px; }
 QComboBox { combobox-popup: 0; }
@@ -104,6 +106,12 @@ def nav_icon(kind: str) -> QIcon:
             for i, h in enumerate((4, 7, 10, 13)):
                 x = 3.5 + i * 3.7
                 p.drawLine(QPointF(x, 15.5), QPointF(x, 15.5 - h))
+        elif kind == "home":
+            path = QPainterPath()
+            path.moveTo(2.5, 8.5); path.lineTo(9, 2.8); path.lineTo(15.5, 8.5)
+            p.drawPath(path)
+            p.drawRoundedRect(QRectF(4.5, 7.5, 9, 8), 1.5, 1.5)
+            p.drawLine(QPointF(9, 15.5), QPointF(9, 11.5))
         elif kind == "all":
             path = QPainterPath()
             path.moveTo(9, 1.8); path.quadTo(10, 8, 16.2, 9); path.quadTo(10, 10, 9, 16.2); path.quadTo(8, 10, 1.8, 9); path.quadTo(8, 8, 9, 1.8)
@@ -144,6 +152,21 @@ class GlowChassis(QFrame):
                 g.setAlpha(alpha)
                 p.setBrush(g)
                 p.drawRoundedRect(r.adjusted(-grow, -grow, grow, grow), 6 + grow, 6 + grow)
+        p.end()
+
+
+class GlowBackground(QWidget):
+    """Content area with a soft violet light in the top-right corner."""
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        p.fillRect(self.rect(), QColor("#121318"))
+        from PySide6.QtGui import QRadialGradient
+        g = QRadialGradient(QPointF(self.width() * 0.92, -40), max(420.0, self.width() * 0.55))
+        g.setColorAt(0, QColor(124, 92, 255, 46))
+        g.setColorAt(0.5, QColor(91, 140, 255, 14))
+        g.setColorAt(1, QColor(0, 0, 0, 0))
+        p.fillRect(self.rect(), g)
         p.end()
 
 
@@ -382,7 +405,7 @@ class AjazzWindow(QWidget):
         main_lay.setSpacing(0)
         main_lay.addWidget(self._build_sidebar())
 
-        right_area = QWidget()
+        right_area = GlowBackground()
         r_lay = QVBoxLayout(right_area)
         r_lay.setContentsMargins(20, 14, 20, 14)
         r_lay.setSpacing(12)
@@ -407,6 +430,9 @@ class AjazzWindow(QWidget):
         self.stack.addWidget(self.pc_page)
         self.general_page = GeneralLightingPage(self.pc_page, self._pc_pick_color, self._kb_apply_simple, self._kb_now, self._log)
         self.stack.addWidget(self.general_page)
+        self.home_page = HomePage(self.general_page, self._home_devices, self._live_device_colour,
+                                  self.ctrl.is_connected, self._switch_page)
+        self.stack.addWidget(self.home_page)
         c_lay.addWidget(self.stack)
         c_lay.addStretch(1)
 
@@ -423,7 +449,7 @@ class AjazzWindow(QWidget):
         self.btn_rst.setStyleSheet("QPushButton { background-color: transparent; border: 1px solid #f28b82; color: #f28b82; font-weight: 600; border-radius: 17px; padding: 8px 20px; } QPushButton:hover { background-color: #3b1d1e; }")
         self.btn_rst.clicked.connect(self._on_factory_reset)
         self.btn_apply_all = QPushButton("Apply")
-        self.btn_apply_all.setStyleSheet("QPushButton { background-color: #7c5cff; color: #ffffff; font-weight: 700; border: 1px solid #7c5cff; border-radius: 17px; padding: 8px 30px; } QPushButton:hover { background-color: #9378ff; }")
+        self.btn_apply_all.setStyleSheet("QPushButton { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #7c5cff, stop:1 #5b8cff); color: #ffffff; font-weight: 700; border: none; border-radius: 17px; padding: 9px 30px; } QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #9378ff, stop:1 #78a2ff); }")
         self.btn_apply_all.clicked.connect(self._apply_current_tab)
         uni_bar.addWidget(self.btn_rst)
         uni_bar.addStretch()
@@ -456,7 +482,7 @@ class AjazzWindow(QWidget):
             cb.showPopup = make_show()
         self._restore_ui_state()
         self._set_lang(self.lang, save=False)
-        self._switch_page(0)
+        self._switch_page(8)
 
         self.status_timer = QTimer(self)
         self.status_timer.timeout.connect(self._update_status)
@@ -494,6 +520,7 @@ class AjazzWindow(QWidget):
             return g
 
         items = [  # (label, icon, stack page, group heading shown before it)
+            ("Home", "home", 8, None),
             ("General Lighting", "all", 7, "Lighting"),
             ("Devices", "pc", 6, None),
             ("Effects", "light", 0, "Keyboard"),
@@ -548,6 +575,8 @@ class AjazzWindow(QWidget):
         self.kb_box.setVisible(kb_page)
         self.btn_rst.setVisible(kb_page)
         self.btn_apply_all.setVisible(kb_page)
+        for w in (self.lbl_prof, self.cb_profiles, self.btn_prof_load, self.btn_prof_save, self.btn_prof_del):
+            w.setVisible(kb_page)  # profiles hold keyboard settings
         self._fit_stack(idx)
         if self.stack.currentIndex() != idx:
             self.stack.setCurrentIndex(idx)
@@ -635,7 +664,7 @@ class AjazzWindow(QWidget):
         for w in getattr(self, "_kb_nav", []):
             w.setVisible(ok)
         if not ok and self.stack.currentIndex() < 6:
-            self._switch_page(7)
+            self._switch_page(8)
         if time.monotonic() < self._log_until:
             return
         t = STRINGS[self.lang]
@@ -763,13 +792,28 @@ class AjazzWindow(QWidget):
         s = state.lower()
         if key == "keyboard":
             return self._preview_colour(0, time.monotonic())  # same source as the keyboard view; None when off
-        if s.startswith("synced") and hasattr(self, "general_page"):
-            return self.general_page.current_colour() or colour
+        if hasattr(self, "general_page"):
+            _, streamed = self.general_page.sync_now()
+            if key in streamed:  # app-driven effect: same colour the device was just sent
+                return self.general_page.current_colour(key) or colour
         if s.startswith(("rainbow", "spectrum cycle", "color cycle", "colour cycle")):
             return QColor.fromHsvF((time.monotonic() / 8.0) % 1.0, 1.0, 1.0)  # hardware rainbow: phase unknown
         if s.startswith("off"):
             return None
         return colour
+
+    def closeEvent(self, e):
+        tray = getattr(self, "tray", None)
+        if tray is not None and not getattr(self, "_quitting", False):  # close to tray; lighting keeps running
+            e.ignore()
+            self.hide()
+            tray.hint_once()
+            return
+        super().closeEvent(e)
+
+    def _home_devices(self):
+        devs, _ = self.pc_page._devices()
+        return [(k, name, kind, state, now) for k, name, kind, _label, now, state, _fn in devs]
 
     def _pc_pick_color(self, initial):
         dlg = ColorPickerDialog(QColor(initial), self, self.lang)
@@ -797,7 +841,7 @@ class AjazzWindow(QWidget):
             return QColor.fromHsvF(max(0.0, c.hsvHueF()), c.hsvSaturationF(), c.valueF() * value)
         gp = getattr(self, "general_page", None)
         cal = gp.kb_cal if gp is not None else None
-        if gp is not None and gp._follow and gp._timer.isActive():
+        if gp is not None and gp._mode == "follow" and gp._timer.isActive():
             secs = gp._clock.elapsed() / 1000.0  # same clock the PC parts follow
         else:
             secs = now - self._kb_rainbow_t0
@@ -815,7 +859,7 @@ class AjazzWindow(QWidget):
     def _tick_glow(self):
         st = getattr(self, "_applied_light", None)
         # only animate while someone can see it: window focused, not minimised (the hardware keeps running regardless)
-        if not self.isActiveWindow() or self.isMinimized():
+        if not demo.ENABLED and (not self.isActiveWindow() or self.isMinimized()):
             return
         if self.kb_box.isVisible() and st and st.get("rainbow") and st.get("mode", 0) and st.get("brightness", 0):
             self.chassis.update()
@@ -1757,7 +1801,7 @@ class AjazzWindow(QWidget):
         self.btn_apply_all.setText(t["btn_written"] if ok else t["no_conn"])
         self.btn_apply_all.setStyleSheet("QPushButton { background-color: #81c995; color: #062e16; font-weight: 600; border: 1px solid #81c995; border-radius: 18px; padding: 9px 24px; }" if ok else "QPushButton { background-color: #f28b82; color: #3c0806; font-weight: 600; border: 1px solid #f28b82; border-radius: 18px; padding: 9px 24px; }")
         self._log(t["log_apply_all"] if ok else t["log_err"], ok)
-        QTimer.singleShot(1600, lambda: (self.btn_apply_all.setText(t["btn_apply_all"]), self.btn_apply_all.setStyleSheet("QPushButton { background-color: #7c5cff; color: #ffffff; font-weight: 600; border: 1px solid #7c5cff; border-radius: 18px; padding: 9px 24px; } QPushButton:hover { background-color: #9378ff; }")))
+        QTimer.singleShot(1600, lambda: (self.btn_apply_all.setText(t["btn_apply_all"]), self.btn_apply_all.setStyleSheet("QPushButton { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #7c5cff, stop:1 #5b8cff); color: #ffffff; font-weight: 700; border: none; border-radius: 17px; padding: 9px 30px; } QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #9378ff, stop:1 #78a2ff); }")))
 
     def _set_lang(self, lang: str, save: bool = True):
         self.lang = lang if lang in STRINGS else "en"

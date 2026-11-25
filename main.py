@@ -1,6 +1,7 @@
 import sys
 import traceback
 import os
+import tempfile
 
 if __name__ == "__main__":
     try:
@@ -9,11 +10,18 @@ if __name__ == "__main__":
     except ImportError:
         pass  # running from source without velopack
 
+DEMO = "--demo" in sys.argv  # simulated devices and a throwaway settings folder; never touches hardware
+if DEMO:
+    from ajazz_app import demo
+    demo.prepare(os.path.join(tempfile.gettempdir(), "intellijency-demo"))  # before any settings path is read
+
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtWidgets import QApplication, QMessageBox, QSystemTrayIcon
 from ajazz_app.gui import AjazzWindow
 from ajazz_app.updater import Updater, current_version
+from ajazz_app import welcome
+from ajazz_app.tray import Tray
 
 CRASH_LOG = os.path.join(os.path.expanduser("~/.config/ajazz_studio"), "crash.log")
 
@@ -31,13 +39,13 @@ def handle_exception(exc_type, exc_value, exc_tb):
 
 
 def offer_update(win, updater, version):
-    if win.isMinimized():  # started with Windows: don't pop up, just install when the app closes
+    if not win.isVisible() or win.isMinimized():  # running in the background: install quietly when the app closes
         updater.apply_on_exit()
         return
     box = QMessageBox(win)
     box.setWindowTitle("Update ready")
     box.setText(f"Intellijency {version} has been downloaded.")
-    box.setInformativeText("Restart now to use it, or it will be installed when you close the app.")
+    box.setInformativeText("Restart now to use it, or it will be installed when you quit the app.")
     now = box.addButton("Restart now", QMessageBox.AcceptRole)
     box.addButton("Later", QMessageBox.RejectRole)
     box.exec()
@@ -56,24 +64,36 @@ if __name__ == "__main__":
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
             "velopack.Intellijency" if getattr(sys, "frozen", False) else "Intellijency.App")
     app = QApplication(sys.argv)
+    icon = QIcon()
     _bd = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-    for _p in (os.path.join(_bd, "assets", "intellijency-logo.ico"), os.path.join(_bd, "intellijency-logo.ico"), os.path.join(_bd, "assets", "icon.png"), os.path.join(_bd, "icon.png")):
+    for _p in (os.path.join(_bd, "assets", "intellijency-logo.ico"), os.path.join(_bd, "assets", "icon.png")):
         if os.path.exists(_p):
-            app.setWindowIcon(QIcon(_p))
+            icon = QIcon(_p)
+            app.setWindowIcon(icon)
             break
     app.setStyle("Fusion")
+    if DEMO:
+        demo.install()
     win = AjazzWindow()
     version = current_version()
-    if version:
-        win.setWindowTitle(f"Intellijency {version}")
+    win.setWindowTitle(f"Intellijency {version}" if version else ("Intellijency (demo)" if DEMO else "Intellijency"))
     win.move(app.primaryScreen().availableGeometry().center() - win.rect().center())  # open centred, fully on screen
-    if "--minimized" in sys.argv:  # used by Start with Windows
+
+    if QSystemTrayIcon.isSystemTrayAvailable():
+        win.tray = Tray(app, win, icon)
+        app.setQuitOnLastWindowClosed(False)  # closing the window keeps the app (and its lighting) running
+    background = "--minimized" in sys.argv  # Start with Windows
+    if background and getattr(win, "tray", None) is None:
         win.showMinimized()
-    else:
+    elif not background:
         win.show()
+        if welcome.needed():
+            QTimer.singleShot(300, lambda: welcome.WelcomeDialog(win, win).exec())
+
     QTimer.singleShot(1500, win.general_page.resume)  # restart a synced effect that was running last time
-    updater = Updater()
-    # queued: `ready` is emitted from the download thread, the dialog must open on the UI thread
-    updater.ready.connect(lambda v: offer_update(win, updater, v), Qt.QueuedConnection)
-    QTimer.singleShot(4000, updater.start)  # check GitHub for a newer version once the app has settled
+    if not DEMO:
+        updater = Updater()
+        # queued: `ready` is emitted from the download thread, the dialog must open on the UI thread
+        updater.ready.connect(lambda v: offer_update(win, updater, v), Qt.QueuedConnection)
+        QTimer.singleShot(4000, updater.start)  # check GitHub for a newer version once the app has settled
     sys.exit(app.exec())

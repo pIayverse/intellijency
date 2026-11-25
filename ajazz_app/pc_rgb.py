@@ -255,6 +255,7 @@ class PcLightingPage(QWidget):
             while box.count():
                 it = box.takeAt(0)
                 if it.widget():
+                    it.widget().hide()  # gone from view now; freed by deleteLater on the next loop
                     it.widget().deleteLater()
         devs, ok = self._devices()
         self.btn_all.setEnabled(bool(devs))
@@ -337,7 +338,7 @@ class PcLightingPage(QWidget):
 
     def _moving(self, key, state):
         s = state.lower()
-        return key == "keyboard" or any(s.startswith(m) for m in RAINBOW_MODES)
+        return key == "keyboard" or s in ("synced gradient", "breathing", "wave") or any(s.startswith(m) for m in RAINBOW_MODES)
 
     def _show_pic(self, label, name, type_key, key, state, colour, w, h):
         label.setPixmap(picture_for(name, type_key, self.live_colour(key, state, colour) or QColor(0, 0, 0), w, h))
@@ -345,7 +346,8 @@ class PcLightingPage(QWidget):
             self._live_pics.append((label, name, type_key, key, state, colour, w, h))
 
     def _animate(self):
-        if not self.isVisible() or not self.window().isActiveWindow():
+        from . import demo
+        if not self.isVisible() or not (demo.ENABLED or self.window().isActiveWindow()):
             return
         for label, name, type_key, key, state, colour, w, h in self._live_pics:
             try:
