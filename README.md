@@ -12,8 +12,11 @@ python -m pip install PySide6 hidapi openrgb-python
 python main.py
 ```
 
-The **PC Lighting** tab controls motherboard, graphics card, cooler and fan RGB through
-[OpenRGB](https://openrgb.org), which must be running (its Windows service starts it automatically).
+The **RGB Devices** and **General Lighting** tabs control lighting on anything
+[OpenRGB](https://openrgb.org) supports: motherboards, graphics cards, coolers and fans, plus keyboards, mice and
+headsets from brands such as Wooting, Razer, Corsair, Logitech and SteelSeries. OpenRGB must be running (its Windows
+service starts it automatically). Settings beyond lighting (actuation, remapping, macros) are Ajazz AK820 Max HE only;
+other brands keep using their own apps for those.
 
 Close SignalRGB or any other RGB app first; only one program can talk to the keyboard at a time.
 

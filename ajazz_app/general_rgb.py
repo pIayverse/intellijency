@@ -82,7 +82,7 @@ class GeneralLightingPage(QWidget):
         outer.addWidget(card)
         outer.addStretch(1)
 
-        title = QLabel("General Lighting <span style='color:#9aa0a6; font-weight:500;'>· one look for your keyboard and every PC part</span>")
+        title = QLabel("General Lighting <span style='color:#9aa0a6; font-weight:500;'>· one look for every device</span>")
         title.setObjectName("card_title")
         lay.addWidget(title)
 
@@ -192,7 +192,7 @@ class GeneralLightingPage(QWidget):
                 self.rows.addWidget(self._row(dev.id, dev.name, TYPE_NAMES.get(dev.type.name, dev.type.name.title()), c,
                                               mode + (f" {c.name().upper()}" if mode.lower() in ("static", "direct") else "")))
         else:
-            note = QLabel("PC parts aren't available: OpenRGB isn't running. Only the keyboard will change.")
+            note = QLabel("Other devices aren't available: OpenRGB isn't running. Only the Ajazz keyboard will change.")
             note.setStyleSheet("color: #9aa0a6;")
             note.setWordWrap(True)
             self.rows.addWidget(note)
@@ -238,7 +238,7 @@ class GeneralLightingPage(QWidget):
                 self._clock.start()
             self._timer.start()
             n = len(self._sync_devs)
-            parts = f"{n} PC part{'s' if n != 1 else ''}"
+            parts = f"{n} device{'s' if n != 1 else ''}"
             if gradient:
                 msg = f"Synced gradient running on {parts}; the keyboard shows Color 1 (it has no two-colour effect)."
             elif follow:
@@ -336,7 +336,7 @@ class GeneralLightingPage(QWidget):
                     self.start_sync(targets, follow=follow, gradient=effect == "Synced Gradient")
                     done += len(self._sync_devs)
                 except Exception as e:
-                    failed.append(f"PC parts ({e})")
+                    failed.append(f"devices ({e})")
             else:
                 for dev in targets:
                     try:

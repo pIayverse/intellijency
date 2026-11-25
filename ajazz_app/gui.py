@@ -5,7 +5,7 @@ from datetime import datetime
 import json
 import os
 import time
-from PySide6.QtCore import Qt, QRegularExpression, QTimer, QEvent, QSize, Signal, QPropertyAnimation, QEasingCurve
+from PySide6.QtCore import Qt, QRectF, QRegularExpression, QTimer, QEvent, QSize, Signal, QPropertyAnimation, QEasingCurve
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QColor, QPixmap, QPainter, QIcon, QPen, QLinearGradient, QRegularExpressionValidator, QPainterPath
 from PySide6.QtWidgets import (
@@ -16,7 +16,7 @@ from .core import AjazzController, EFFECTS
 from .keymap import ROWS
 from .widgets import RotaryKnob
 from .pc_rgb import PcLightingPage
-from .general_rgb import GeneralLightingPage
+from .general_rgb import GeneralLightingPage, load_calibration, follow_hue
 
 DARK_STYLE = """
 QWidget { background-color: #121318; color: #e2e2e9; font-family: "Inter", "Roboto", "Segoe UI", sans-serif; font-size: 13px; }
@@ -26,8 +26,8 @@ QPushButton#nav_btn:hover { background-color: rgba(255, 255, 255, 0.05); color: 
 QPushButton#nav_btn:checked { background-color: rgba(124, 92, 255, 0.16); color: #c3b5ff; font-weight: 600; }
 QPushButton { background-color: #20222b; border: 1px solid #363846; border-radius: 8px; padding: 6px 12px; color: #e2e2e9; font-weight: 500; }
 QPushButton:hover { background-color: #2e303c; border-color: #7c5cff; }
-QPushButton#keycap { background-color: #1d1f27; border: 1px solid #363846; border-bottom: 2px solid #0e0f14; border-radius: 6px; padding: 0px; font-size: 11px; font-weight: 500; color: #d5d8e2; }
-QPushButton#keycap:hover { border-color: #7c5cff; background-color: #2b2d39; color: #ffffff; }
+QPushButton#keycap { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2a2c37, stop:1 #1a1b22); border: 1px solid #34364a; border-bottom: 3px solid #0a0b0e; border-radius: 6px; padding: 0px; font-size: 11px; font-weight: 600; color: #d6d8e0; }
+QPushButton#keycap:hover { border-color: #7c5cff; background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #33354a, stop:1 #22232c); color: #ffffff; }
 QPushButton#primary { background-color: #7c5cff; color: #ffffff; font-weight: 700; border: none; border-radius: 18px; padding: 9px 24px; }
 QPushButton#primary:hover { background-color: #9378ff; }
 QFrame#card { background-color: #17181f; border: 1px solid #282a35; border-radius: 16px; }
@@ -120,6 +120,31 @@ def nav_icon(kind: str) -> QIcon:
     ic.addPixmap(draw("#7c5cff"), QIcon.Normal, QIcon.On)
     ic.addPixmap(draw("#7c5cff"), QIcon.Active, QIcon.On)
     return ic
+
+class GlowChassis(QFrame):
+    """Keyboard body that paints each key's light as a soft underglow behind the keycaps."""
+    def __init__(self, keys: dict, colour_for):
+        super().__init__()
+        self._keys, self._colour_for = keys, colour_for  # keys: slot -> keycap button (filled in later)
+
+    def paintEvent(self, e):
+        super().paintEvent(e)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        p.setPen(Qt.NoPen)
+        now = time.monotonic()
+        for slot, w in self._keys.items():
+            c = self._colour_for(slot, now)
+            if c is None or not w.isVisible():
+                continue
+            r = QRectF(w.geometry())
+            for grow, alpha in ((5.0, 40), (2.5, 100), (0.5, 200)):  # outer haze -> bright rim
+                g = QColor(c)
+                g.setAlpha(alpha)
+                p.setBrush(g)
+                p.drawRoundedRect(r.adjusted(-grow, -grow, grow, grow), 6 + grow, 6 + grow)
+        p.end()
+
 
 class HintList(QListWidget):
     """List that shows a hint while it is empty."""
@@ -375,6 +400,7 @@ class AjazzWindow(QWidget):
         self.stack.addWidget(self._build_macro_tab())
         self.stack.addWidget(self._build_dks_tab())
         self.pc_page = PcLightingPage(self._pc_pick_color, self._log)
+        self.pc_page.kb_apply, self.pc_page.kb_now = self._kb_apply_simple, self._kb_now
         self.stack.addWidget(self.pc_page)
         self.general_page = GeneralLightingPage(self.pc_page, self._pc_pick_color, self._kb_apply_simple, self._kb_now, self._log)
         self.stack.addWidget(self.general_page)
@@ -450,15 +476,9 @@ class AjazzWindow(QWidget):
         if not pm.isNull():
             mark.setPixmap(pm.scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         brand.addWidget(mark)
-        names = QVBoxLayout()
-        names.setSpacing(0)
         name = QLabel("Intellijency")
-        name.setStyleSheet("color: #f4f5fb; font-size: 15px; font-weight: 800;")
-        model = QLabel("AK820 Max HE")
-        model.setStyleSheet("color: #8a8d99; font-size: 11px; font-weight: 500;")
-        names.addWidget(name)
-        names.addWidget(model)
-        brand.addLayout(names)
+        name.setStyleSheet("color: #f4f5fb; font-size: 16px; font-weight: 800;")
+        brand.addWidget(name)
         brand.addStretch()
         lay.addLayout(brand)
 
@@ -468,20 +488,24 @@ class AjazzWindow(QWidget):
             lay.addSpacing(18)
             lay.addWidget(g)
             lay.addSpacing(6)
+            return g
 
         items = [  # (label, icon, stack page, group heading shown before it)
-            ("General Lighting", "all", 7, "All devices"),
-            ("Lighting", "light", 0, "Keyboard"),
+            ("General Lighting", "all", 7, "Lighting"),
+            ("Devices", "pc", 6, None),
+            ("Effects", "light", 0, "Keyboard"),
             ("Switches & System", "switch", 1, None),
             ("Rappy Snappy & SOCD", "socd", 2, None),
             ("Key Remapping", "remap", 3, None),
             ("Macros", "macro", 4, None),
             ("Dynamic Keystroke", "dks", 5, None),
-            ("PC Lighting", "pc", 6, "PC"),
         ]
+        self._kb_nav = []  # Keyboard group: only shown while a keyboard the app can configure is connected
         for text, icon, idx, heading in items:
             if heading:
-                group(heading)
+                g = group(heading)
+                if heading == "Keyboard":
+                    self._kb_nav.append(g)
             btn = QPushButton(text.replace("&", "&&"))
             btn.setObjectName("nav_btn")
             btn.setCheckable(True)
@@ -489,6 +513,8 @@ class AjazzWindow(QWidget):
             btn.setIconSize(QSize(18, 18))
             btn.setCursor(Qt.PointingHandCursor)
             btn._page = idx
+            if idx < 6:
+                self._kb_nav.append(btn)
             btn.clicked.connect(lambda _, i=idx: self._switch_page(i))
             lay.addWidget(btn)
             self.nav_buttons.append(btn)
@@ -596,6 +622,10 @@ class AjazzWindow(QWidget):
         elif not ok and self._was_connected:
             self._log("✕ Keyboard connection lost", False, 3.0)
         self._was_connected = ok
+        for w in getattr(self, "_kb_nav", []):
+            w.setVisible(ok)
+        if not ok and self.stack.currentIndex() < 6:
+            self._switch_page(7)
         if time.monotonic() < self._log_until:
             return
         t = STRINGS[self.lang]
@@ -611,9 +641,10 @@ class AjazzWindow(QWidget):
         U, GAP = 48, 5
         self._kb_keys = []
         self._kb_units = max(sum(k[1] for k in row) for row in ROWS)
-        chassis = QFrame()
+        chassis = GlowChassis(self.key_buttons, self._preview_colour)
+        self.chassis = chassis
         chassis.setObjectName("chassis")
-        chassis.setStyleSheet("QFrame#chassis { background-color: #0c0d11; border: 1px solid #2e303c; border-radius: 14px; }")
+        chassis.setStyleSheet("QFrame#chassis { background-color: #0a0b0e; border: 1px solid #2a2c36; border-radius: 16px; }")
         c_lay = QVBoxLayout(chassis)
         c_lay.setContentsMargins(12, 12, 12, 12)
         c_lay.setSpacing(GAP)
@@ -651,6 +682,11 @@ class AjazzWindow(QWidget):
         row_wrap.addWidget(chassis)
         row_wrap.addStretch()
         lay.addLayout(row_wrap)
+        self._kb_rainbow_t0 = time.monotonic()  # phase unknown until the app restarts the keyboard rainbow
+        self._glow_timer = QTimer(self)
+        self._glow_timer.setInterval(50)
+        self._glow_timer.timeout.connect(self._tick_glow)
+        self._glow_timer.start()
         return self.kb_box
 
     def _fit_keyboard(self):
@@ -685,6 +721,7 @@ class AjazzWindow(QWidget):
         bright = self.ctrl.state["light"].get("brightness") or 5
         timing = {"speed": speed, "direction": 0} if speed is not None else {}
         ok = self.ctrl.apply_light(mode=mode, r=col.red(), g=col.green(), b=col.blue(), rainbow=rainbow, brightness=bright, **timing)
+        self._kb_rainbow_t0 = time.monotonic()
         if speed is not None:
             self.knob_speed.setValue(speed)
             self.cb_dir.setCurrentIndex(0)
@@ -726,14 +763,36 @@ class AjazzWindow(QWidget):
         super().resizeEvent(e)
         QTimer.singleShot(0, self._fit_keyboard)
 
-    def _key_glow(self, slot):
-        """Colour a key currently lights up in, from the last lighting settings sent; None when lights are off."""
+    def _preview_colour(self, slot, now):
+        """Colour key `slot` shows at time `now`, from the last lighting the app applied; None when it's off."""
         st = getattr(self, "_applied_light", None)
         if st is None or st.get("mode", 0) == 0 or st.get("brightness", 0) == 0:
             return None
-        if st.get("rainbow"):
-            return QColor.fromHsv(int((slot % 16) / 16 * 359), 220, 255)
-        return QColor(st.get("r", 255), st.get("g", 255), st.get("b", 255))
+        value = max(0.25, st.get("brightness", 5) / 5.0)
+        if not st.get("rainbow"):
+            c = QColor(st.get("r", 255), st.get("g", 255), st.get("b", 255))
+            return QColor.fromHsvF(max(0.0, c.hsvHueF()), c.hsvSaturationF(), c.valueF() * value)
+        gp = getattr(self, "general_page", None)
+        cal = gp.kb_cal if gp is not None else None
+        if gp is not None and gp._follow and gp._timer.isActive():
+            secs = gp._clock.elapsed() / 1000.0  # same clock the PC parts follow
+        else:
+            secs = now - self._kb_rainbow_t0
+        speed = max(1, st.get("speed", 3))
+        if st.get("mode") == EFFECTS["Spectrum Cycle"] and cal is not None and speed == cal["speed"]:
+            hue = follow_hue(cal, secs)  # whole board, measured timing
+        else:
+            # shortcut: other speeds / effects scale the measured period; exact only at the calibrated speed
+            period = (cal["period"] * cal["speed"] / speed) if cal else 7.0 * 3 / speed
+            hue = (secs / period) % 1.0
+            if st.get("mode") != EFFECTS["Spectrum Cycle"]:
+                hue = (hue + (slot % 16) / 16.0) % 1.0  # wave-type effects: colour rolls across the keys
+        return QColor.fromHsvF(hue, 1.0, value)
+
+    def _tick_glow(self):
+        st = getattr(self, "_applied_light", None)
+        if self.kb_box.isVisible() and st and st.get("rainbow") and st.get("mode", 0) and st.get("brightness", 0):
+            self.chassis.update()
 
     def _update_light_now(self):
         if not hasattr(self, "lbl_light_now"):
@@ -782,9 +841,9 @@ class AjazzWindow(QWidget):
             elif s == self.selected_slot:
                 b.setStyleSheet("QPushButton#keycap { background-color: #1d1f27; border: 1.5px solid #7c5cff; color: #7c5cff; font-weight: 700; }")
             else:
-                g = self._key_glow(s)
-                b.setStyleSheet("" if g is None else
-                    f"QPushButton#keycap {{ border: 1px solid {g.name()}; border-bottom: 3px solid {g.name()}; }}")
+                b.setStyleSheet("")
+        if hasattr(self, "chassis"):
+            self.chassis.update()
 
     def _resolve_slot(self, event):
         # Linux (X11/Wayland) physical scan code -> keyboard matrix slot
@@ -1028,6 +1087,7 @@ class AjazzWindow(QWidget):
             speed=int(self.knob_speed.value()),
             direction=self.cb_dir.currentIndex()
         )
+        self._kb_rainbow_t0 = time.monotonic()
         self._applied_light = dict(self.ctrl.state["light"])
         self._refresh_key_styles()
 

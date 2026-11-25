@@ -1,4 +1,5 @@
-"""PC Lighting page: controls motherboard, GPU, cooler and fan RGB through OpenRGB's local SDK server."""
+"""RGB Devices page: lighting for any OpenRGB-supported device (motherboards, GPUs, coolers, fans, and keyboards,
+mice and headsets from brands such as Wooting, Razer, Corsair, Logitech and SteelSeries) via OpenRGB's SDK server."""
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPixmap, QPainter, QIcon
 from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox)
@@ -99,6 +100,9 @@ class PcLightingPage(QWidget):
         self._pick, self._log = pick_color, log
         self.client = None
         self.before_change = lambda: None  # set by General Lighting to stop a running sync
+        # set by the main window for keyboards the app drives itself: kb_apply(effect, QColor) -> bool,
+        # kb_now() -> (effect name, QColor | None, connected)
+        self.kb_apply, self.kb_now, self.kb_name = None, None, "Ajazz AK820 Max HE"
         self.all_colour = QColor(255, 140, 26)
         self.dev_colours = {}
 
@@ -113,7 +117,7 @@ class PcLightingPage(QWidget):
         outer.addStretch(1)  # spare height goes below the card, not between its rows
 
         head = QHBoxLayout()
-        title = QLabel("PC Lighting")
+        title = QLabel("Devices <span style='color:#9aa0a6; font-weight:500;'>· keyboards, mice and PC parts from any supported brand</span>")
         title.setObjectName("card_title")
         head.addWidget(title)
         head.addStretch()
@@ -166,6 +170,10 @@ class PcLightingPage(QWidget):
 
         self.rescan()
 
+    def showEvent(self, e):
+        super().showEvent(e)
+        self.rescan()  # pick up devices plugged in since, and the keyboard hooks set after construction
+
     # ---------- connection ----------
     def _connect(self) -> bool:
         if OpenRGBClient is None:
@@ -187,59 +195,66 @@ class PcLightingPage(QWidget):
             it = self.dev_box.takeAt(0)
             if it.widget():
                 it.widget().deleteLater()
+        count = 0
+        if self.kb_now is not None:
+            effect, col, connected = self.kb_now()
+            if connected:
+                now_txt = effect + (f" {col.name().upper()}" if col is not None and effect != "Off" else "")
+                self.dev_box.addWidget(self._row("keyboard", self.kb_name, "Keyboard", col or QColor(0, 0, 0), now_txt,
+                                                 lambda e, c: self.kb_apply(e, c)))
+                count += 1
         ok = self._connect()  # also refreshes device states
-        self.btn_all.setEnabled(ok)
-        if not ok:
-            return
-        devs = self.client.devices
-        n = len(devs)
-        self.lbl_status.setText(f"Connected to OpenRGB · {n} device{'s' if n != 1 else ''} found. "
-                                "Close Armoury Crate's and NZXT CAM's lighting control so they don't override these settings.")
-        if not devs:
-            empty = QLabel("No RGB devices found. Install the hardware, restart OpenRGB, then click Rescan.")
+        if ok:
+            for dev in self.client.devices:
+                now = current_colour(dev)
+                mode = dev.modes[dev.active_mode].name if dev.modes else "?"
+                txt = mode + (f" {now.name().upper()}" if mode.lower() in ("static", "direct") else "")
+                self.dev_box.addWidget(self._row(dev.id, dev.name, TYPE_NAMES.get(dev.type.name, dev.type.name.title()),
+                                                 now, txt, lambda e, c, d=dev: apply_to_device(d, e, c)))
+                count += 1
+        self.btn_all.setEnabled(count > 0)
+        found = f"{count} device{'s' if count != 1 else ''} found."
+        self.lbl_status.setText(
+            f"{found} Close other RGB apps (Armoury Crate, NZXT CAM, Razer Synapse, iCUE, G HUB) so they don't override these settings."
+            if ok else f"{found} OpenRGB isn't running, so only directly supported devices are listed. Start OpenRGB, then click Rescan.")
+        if count == 0:
+            empty = QLabel("No RGB devices found. Plug in the device, make sure OpenRGB is running, then click Rescan.")
             empty.setStyleSheet("color: #9aa0a6;")
             self.dev_box.addWidget(empty)
-        for dev in devs:
-            self.dev_box.addWidget(self._device_row(dev))
 
     # ---------- rows ----------
-    def _device_row(self, dev):
+    def _row(self, key, name_text, kind_text, now, mode_now, apply_fn):
+        """One device: current state, effect, colour and Apply. apply_fn(effect, QColor) does the work."""
         row_w = QFrame()
         row_w.setStyleSheet("QFrame#devrow { background-color: #1d1f27; border: 1px solid #282a35; border-radius: 10px; }")
         row_w.setObjectName("devrow")
         row = QHBoxLayout(row_w)
         row.setContentsMargins(12, 8, 12, 8)
         row.setSpacing(10)
-
-        now = current_colour(dev)
-        mode_now = dev.modes[dev.active_mode].name if dev.modes else "?"
         dot = QLabel()
         dot.setPixmap(status_swatch(mode_now, now).pixmap(16, 16))
-        dot.setToolTip(f"Current: {mode_now}, {now.name().upper()}")
         row.addWidget(dot)
-
         text = QVBoxLayout()
         text.setSpacing(0)
-        name = QLabel(dev.name)
+        name = QLabel(name_text)
         name.setStyleSheet("font-weight: 600; color: #e2e2e9;")
-        kind = QLabel(f"{TYPE_NAMES.get(dev.type.name, dev.type.name.title())} · now: {mode_now}"
-                      + (f" {now.name().upper()}" if mode_now.lower() in ('static', 'direct') else ""))
+        kind = QLabel(f"{kind_text} · now: {mode_now}")
         kind.setStyleSheet("color: #9aa0a6; font-size: 11px;")
         text.addWidget(name)
         text.addWidget(kind)
         row.addLayout(text, 1)
 
-        col = self.dev_colours.get(dev.id, now if now != QColor(0, 0, 0) else QColor(self.all_colour))
-        self.dev_colours[dev.id] = col
+        if key not in self.dev_colours:
+            self.dev_colours[key] = now if now != QColor(0, 0, 0) else QColor(self.all_colour)
         cb = QComboBox()
         cb.addItems(EFFECTS)
         b_col = QPushButton("Color")
-        b_col.setIcon(_swatch(col))
+        b_col.setIcon(_swatch(self.dev_colours[key]))
 
         def pick():
-            c = self._pick(self.dev_colours[dev.id])
+            c = self._pick(self.dev_colours[key])
             if c is not None:
-                self.dev_colours[dev.id] = c
+                self.dev_colours[key] = c
                 b_col.setIcon(_swatch(c))
         b_col.clicked.connect(pick)
         cb.currentTextChanged.connect(lambda e: b_col.setEnabled(e == "Static"))
@@ -248,10 +263,11 @@ class PcLightingPage(QWidget):
         def apply_one():
             self.before_change()
             try:
-                apply_to_device(dev, cb.currentText(), self.dev_colours[dev.id])
-                self._log(f"✓ {dev.name}: {cb.currentText()}", True)
+                if apply_fn(cb.currentText(), self.dev_colours[key]) is False:
+                    raise IOError("device didn't respond")
+                self._log(f"✓ {name_text}: {cb.currentText()}", True)
             except Exception as e:
-                self._log(f"✕ {dev.name}: {e}", False)
+                self._log(f"✕ {name_text}: {e}", False)
             self.rescan()
         b_apply.clicked.connect(apply_one)
         for w in (cb, b_col, b_apply):
@@ -267,9 +283,14 @@ class PcLightingPage(QWidget):
 
     def apply_all(self) -> bool:
         self.before_change()
-        if not self._connect():
-            return False
         ok = True
+        if self.kb_apply is not None and self.kb_now is not None and self.kb_now()[2]:
+            if self.kb_apply(self.cb_all.currentText(), self.all_colour) is False:
+                ok = False
+                self._log(f"✕ {self.kb_name}: didn't respond", False)
+        if not self._connect():
+            self.rescan()
+            return ok
         for dev in self.client.devices:
             try:
                 apply_to_device(dev, self.cb_all.currentText(), self.all_colour)
@@ -278,6 +299,6 @@ class PcLightingPage(QWidget):
                 ok = False
                 self._log(f"✕ {dev.name}: {e}", False)
         if ok:
-            self._log(f"✓ All PC lighting: {self.cb_all.currentText()}", True)
+            self._log(f"✓ All devices: {self.cb_all.currentText()}", True)
         self.rescan()
         return ok
