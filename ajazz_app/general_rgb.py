@@ -206,14 +206,19 @@ class GeneralLightingPage(QWidget):
         self.btn_col2.setVisible(grad)
         self.cb_speed.setVisible(e in SYNCED)
 
-    def _sync_tick(self):
-        secs = self._clock.elapsed() / 1000.0
+    def frame_colour(self, secs):
         if self._gradient:
-            c = gradient_colour(self.colour, self.colour2, secs, SPEEDS[self.cb_speed.currentText()])
-        elif self._follow:
-            c = QColor.fromHsvF(follow_hue(self.kb_cal, secs), 1.0, 1.0)
-        else:
-            c = QColor.fromHsvF((secs / SPEEDS[self.cb_speed.currentText()]) % 1.0, 1.0, 1.0)
+            return gradient_colour(self.colour, self.colour2, secs, SPEEDS[self.cb_speed.currentText()])
+        if self._follow:
+            return QColor.fromHsvF(follow_hue(self.kb_cal, secs), 1.0, 1.0)
+        return QColor.fromHsvF((secs / SPEEDS[self.cb_speed.currentText()]) % 1.0, 1.0, 1.0)
+
+    def current_colour(self):
+        """Colour the synced devices show right now; None when no sync is running."""
+        return self.frame_colour(self._clock.elapsed() / 1000.0) if self._timer.isActive() else None
+
+    def _sync_tick(self):
+        c = self.frame_colour(self._clock.elapsed() / 1000.0)
         rgb = RGBColor(c.red(), c.green(), c.blue())
         for dev in list(self._sync_devs):
             try:

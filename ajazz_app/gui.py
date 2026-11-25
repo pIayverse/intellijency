@@ -403,6 +403,7 @@ class AjazzWindow(QWidget):
         self.pc_page = PcLightingPage(self._pc_pick_color, self._log)
         self.pc_page.kb_apply, self.pc_page.kb_now = self._kb_apply_simple, self._kb_now
         self.pc_page.sync_now = lambda: self.general_page.sync_now() if hasattr(self, 'general_page') else (None, set())
+        self.pc_page.live_colour = self._live_device_colour
         self.stack.addWidget(self.pc_page)
         self.general_page = GeneralLightingPage(self.pc_page, self._pc_pick_color, self._kb_apply_simple, self._kb_now, self._log)
         self.stack.addWidget(self.general_page)
@@ -756,6 +757,19 @@ class AjazzWindow(QWidget):
             eff = names.get(st.get("mode"), "Custom")
         col = None if eff in ("Off", "Rainbow") else QColor(st.get("r", 0), st.get("g", 0), st.get("b", 0))
         return eff, col, self.ctrl.is_connected()
+
+    def _live_device_colour(self, key, state, colour):
+        """Colour a device shows right now, for its picture on the Devices tab."""
+        s = state.lower()
+        if key == "keyboard":
+            return self._preview_colour(0, time.monotonic())  # same source as the keyboard view; None when off
+        if s.startswith("synced") and hasattr(self, "general_page"):
+            return self.general_page.current_colour() or colour
+        if s.startswith(("rainbow", "spectrum cycle", "color cycle", "colour cycle")):
+            return QColor.fromHsvF((time.monotonic() / 8.0) % 1.0, 1.0, 1.0)  # hardware rainbow: phase unknown
+        if s.startswith("off"):
+            return None
+        return colour
 
     def _pc_pick_color(self, initial):
         dlg = ColorPickerDialog(QColor(initial), self, self.lang)

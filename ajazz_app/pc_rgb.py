@@ -1,9 +1,30 @@
 """RGB Devices page: lighting for any OpenRGB-supported device (motherboards, GPUs, coolers, fans, and keyboards,
 mice and headsets from brands such as Wooting, Razer, Corsair, Logitech and SteelSeries) via OpenRGB's SDK server."""
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QPixmap, QPainter, QIcon
 from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton, QComboBox)
 from .device_art import device_picture
+import os, re
+from PySide6.QtWidgets import QFileDialog
+
+PICTURE_DIR = os.path.expanduser("~/.config/ajazz_studio/device_pictures")
+
+
+def _picture_path(device_name: str) -> str:
+    return os.path.join(PICTURE_DIR, re.sub(r"[^A-Za-z0-9._-]+", "_", device_name).strip("_") + ".png")
+
+
+def picture_for(device_name: str, type_key: str, colour: QColor, w: int, h: int) -> QPixmap:
+    """The user's own picture for this device if they set one, else the drawn picture for its type."""
+    path = _picture_path(device_name)
+    if os.path.exists(path):
+        pm = QPixmap(path)
+        if not pm.isNull():
+            dpr = 2
+            pm = pm.scaled(w * dpr, h * dpr, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pm.setDevicePixelRatio(dpr)
+            return pm
+    return device_picture(type_key, colour, w, h)
 
 try:
     from openrgb import OpenRGBClient
@@ -107,6 +128,13 @@ class PcLightingPage(QWidget):
         # set by the main window: sync_now() -> (effect name, set of synced device ids) while a synced effect runs
         self.sync_now = lambda: (None, set())
         self.selected = None  # key of the device whose panel is open
+        # set by the main window: live_colour(key, state, colour) -> QColor the device shows right now
+        self.live_colour = lambda key, state, colour: colour
+        self._live_pics = []  # (label, device name, type, key, state, colour, w, h) for pictures that animate
+        self._anim = QTimer(self)
+        self._anim.setInterval(80)
+        self._anim.timeout.connect(self._animate)
+        self._anim.start()
         self.all_colour = QColor(255, 140, 26)
         self.dev_colours = {}
 
@@ -222,6 +250,7 @@ class PcLightingPage(QWidget):
         return out, ok
 
     def rescan(self):
+        self._live_pics = []
         for box in (self.grid, self.detail_box):
             while box.count():
                 it = box.takeAt(0)
@@ -263,13 +292,14 @@ class PcLightingPage(QWidget):
         v.setSpacing(4)
         pic = QLabel()
         pic.setAlignment(Qt.AlignCenter)
-        pic.setPixmap(device_picture(type_key, now if not state.lower().startswith(("rainbow", "synced", "spectrum", "color cycle")) else QColor("#7c5cff"), 150, 84))
+        self._show_pic(pic, name_text, type_key, key, state, now, 150, 84)
         pic.setStyleSheet("background: transparent; border: none;")
         v.addWidget(pic)
         name = QLabel(name_text)
         name.setStyleSheet("font-weight: 600; color: #e2e2e9; background: transparent; border: none;")
         name.setToolTip(name_text)
         name.setMinimumWidth(10)
+        name.setText(name.fontMetrics().elidedText(name_text, Qt.ElideRight, 170))  # long names end in "…", not mid-letter
         v.addWidget(name)
         row = QHBoxLayout()
         row.setSpacing(6)
@@ -283,6 +313,45 @@ class PcLightingPage(QWidget):
         row.addWidget(info, 1)
         v.addLayout(row)
         return card
+
+    def _set_picture(self, device_name):
+        path, _ = QFileDialog.getOpenFileName(self, f"Picture for {device_name}", os.path.expanduser("~/Pictures"),
+                                              "Images (*.png *.jpg *.jpeg *.webp *.bmp)")
+        if not path:
+            return
+        pm = QPixmap(path)
+        if pm.isNull():
+            self._log("✕ That file isn't an image this app can read", False)
+            return
+        os.makedirs(PICTURE_DIR, exist_ok=True)
+        pm.scaled(800, 800, Qt.KeepAspectRatio, Qt.SmoothTransformation).save(_picture_path(device_name), "PNG")
+        self._log(f"✓ Picture set for {device_name}", True)
+        self.rescan()
+
+    def _clear_picture(self, device_name):
+        try:
+            os.remove(_picture_path(device_name))
+        except OSError:
+            pass
+        self.rescan()
+
+    def _moving(self, key, state):
+        s = state.lower()
+        return key == "keyboard" or any(s.startswith(m) for m in RAINBOW_MODES)
+
+    def _show_pic(self, label, name, type_key, key, state, colour, w, h):
+        label.setPixmap(picture_for(name, type_key, self.live_colour(key, state, colour) or QColor(0, 0, 0), w, h))
+        if self._moving(key, state) and not os.path.exists(_picture_path(name)):  # own photos don't animate
+            self._live_pics.append((label, name, type_key, key, state, colour, w, h))
+
+    def _animate(self):
+        if not self.isVisible():
+            return
+        for label, name, type_key, key, state, colour, w, h in self._live_pics:
+            try:
+                label.setPixmap(device_picture(type_key, self.live_colour(key, state, colour) or QColor(0, 0, 0), w, h))
+            except RuntimeError:  # label deleted by a rescan in between
+                pass
 
     def _select(self, key):
         self.selected = key
@@ -298,7 +367,7 @@ class PcLightingPage(QWidget):
         h.setContentsMargins(16, 14, 16, 14)
         h.setSpacing(18)
         pic = QLabel()
-        pic.setPixmap(device_picture(type_key, now if not state.lower().startswith(("rainbow", "synced", "spectrum", "color cycle")) else QColor("#7c5cff"), 190, 110))
+        self._show_pic(pic, name_text, type_key, key, state, now, 190, 110)
         pic.setStyleSheet("background: transparent; border: none;")
         h.addWidget(pic)
         right = QVBoxLayout()
@@ -347,6 +416,20 @@ class PcLightingPage(QWidget):
         b_apply.clicked.connect(apply_one)
         ctl.addWidget(b_apply)
         right.addLayout(ctl)
+
+        pic_row = QHBoxLayout()
+        pic_row.setSpacing(8)
+        b_pic = QPushButton("Set picture...")
+        b_pic.setToolTip("Use your own image for this device (kept on this PC only)")
+        b_pic.clicked.connect(lambda: self._set_picture(name_text))
+        pic_row.addWidget(b_pic)
+        if os.path.exists(_picture_path(name_text)):
+            b_def = QPushButton("Use default")
+            b_def.setToolTip("Go back to the drawn picture")
+            b_def.clicked.connect(lambda: self._clear_picture(name_text))
+            pic_row.addWidget(b_def)
+        pic_row.addStretch()
+        right.addLayout(pic_row)
         right.addStretch()
         h.addLayout(right, 1)
         return panel
