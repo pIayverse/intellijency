@@ -1,6 +1,6 @@
 from PySide6.QtCore import Qt
 
-# Формат: (Подпись, юниты, usb_hid, точный_слот_матрицы, qt_key)
+# Format: (label, width in units, usb_hid, matrix slot, qt_key)
 ROWS = [
     [('Esc', 1.0, 0x29, 0, Qt.Key_Escape), ('', 0.25, 0, None, None), ('F1', 1.0, 0x3a, 1, Qt.Key_F1), ('F2', 1.0, 0x3b, 2, Qt.Key_F2), ('F3', 1.0, 0x3c, 3, Qt.Key_F3), ('F4', 1.0, 0x3d, 4, Qt.Key_F4), ('', 0.25, 0, None, None), ('F5', 1.0, 0x3e, 5, Qt.Key_F5), ('F6', 1.0, 0x3f, 6, Qt.Key_F6), ('F7', 1.0, 0x40, 7, Qt.Key_F7), ('F8', 1.0, 0x41, 8, Qt.Key_F8), ('', 0.25, 0, None, None), ('F9', 1.0, 0x42, 9, Qt.Key_F9), ('F10', 1.0, 0x43, 10, Qt.Key_F10), ('F11', 1.0, 0x44, 11, Qt.Key_F11), ('F12', 1.0, 0x45, 12, Qt.Key_F12), ('', 0.25, 0, None, None), ('Del', 1.0, 0x4c, 106, Qt.Key_Delete)],
     [('`', 1.0, 0x35, 16, Qt.Key_QuoteLeft), ('1', 1.0, 0x1e, 17, Qt.Key_1), ('2', 1.0, 0x1f, 18, Qt.Key_2), ('3', 1.0, 0x20, 19, Qt.Key_3), ('4', 1.0, 0x21, 20, Qt.Key_4), ('5', 1.0, 0x22, 21, Qt.Key_5), ('6', 1.0, 0x23, 22, Qt.Key_6), ('7', 1.0, 0x24, 23, Qt.Key_7), ('8', 1.0, 0x25, 24, Qt.Key_8), ('9', 1.0, 0x26, 25, Qt.Key_9), ('0', 1.0, 0x27, 26, Qt.Key_0), ('-', 1.0, 0x2d, 27, Qt.Key_Minus), ('=', 1.0, 0x2e, 28, Qt.Key_Equal), ('Backspace', 2.0, 0x2a, 92, Qt.Key_Backspace), ('Home', 1.0, 0x4a, 104, Qt.Key_Home)],

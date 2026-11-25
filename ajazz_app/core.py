@@ -41,9 +41,9 @@ class AjazzController:
     def send_packets(self, packets, delay=0.01) -> bool:
         devices = hid.enumerate(VENDOR_ID, PRODUCT_ID)
         if not devices:
-            print("[HID] Устройство не найдено")
+            print("[HID] Device not found")
             return False
-        # Строго фильтруем вендорские сервисные интерфейсы (исключаем системные клавиатуру и медиа-клавиши)
+        # Only use the vendor control interfaces (skip the normal keyboard and media-key interfaces)
         targets = [d for d in devices if d.get("usage_page", 0) >= 0xff00]
         if not targets:
             targets = [d for d in devices if d.get("interface_number", 0) == 2]
@@ -65,7 +65,7 @@ class AjazzController:
                         time.sleep(delay)
                 sent_any = True
             except Exception as e:
-                print(f"[HID] Пропуск интерфейса {d.get('path')}: {e}")
+                print(f"[HID] Skipping interface {d.get('path')}: {e}")
             finally:
                 if dev:
                     try:

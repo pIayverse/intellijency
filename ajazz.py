@@ -8,7 +8,7 @@ PRODUCT_ID = 0x80b1
 def send_packets(packets, delay=0.01):
     devices = hid.enumerate(VENDOR_ID, PRODUCT_ID)
     if not devices:
-        print("Ошибка: Клавиатура Ajazz AK820 Max HE не найдена!")
+        print("Error: Ajazz AK820 Max HE keyboard not found!")
         return False
     for d in devices:
         try:
@@ -46,7 +46,7 @@ def cmd_light(args):
         0xaa, 0x55
     ]
     if send_packets([pkt], delay=0):
-        print(f"Подсветка: Mode={args.mode} (0x{mode:02x}), RGB=({args.red},{args.green},{args.blue}), Rainbow={args.rgb_mode}, Bright={args.brightness}/5, Speed={args.speed}/5")
+        print(f"Lighting: Mode={args.mode} (0x{mode:02x}), RGB=({args.red},{args.green},{args.blue}), Rainbow={args.rgb_mode}, Bright={args.brightness}/5, Speed={args.speed}/5")
 
 def cmd_switch(args):
     t_val = int(round(args.trigger * 100))
@@ -67,7 +67,7 @@ def cmd_switch(args):
     for off_low, off_high in offsets:
         packets.append([0xaa, 0x27, 0x38, off_low, off_high, 0x00, 0x00, 0x00] + block * 7)
     if send_packets(packets, delay=0.01):
-        print(f"Свитчи: Trigger={args.trigger}mm, FT={args.ft}, Full={full_flag}")
+        print(f"Switches: Trigger={args.trigger}mm, FT={args.ft}, Full={full_flag}")
 
 def cmd_deadzone(args):
     top_val = int(round(args.top * 100)) & 0xff
@@ -81,17 +81,17 @@ def cmd_deadzone(args):
         print(f"Dead Zone: Enable={args.enable}, Top={args.top}mm, Bottom={args.bottom}mm")
 
 def cmd_calib(args):
-    print("Старт калибровки...")
+    print("Starting calibration...")
     if not send_packets([[0xaa, 0x64]], delay=0.2):
         return
     if args.clear:
         send_packets([[0xaa, 0x0f, 0x05]], delay=0.2)
-    print(f"Калибровка активна ({args.time} сек). Нажмите клавиши до упора!")
+    print(f"Calibration active ({args.time} s). Press keys all the way down!")
     for rem in range(args.time, 0, -1):
-        print(f"Осталось: {rem:2d} сек...", end="\r")
+        print(f"Remaining: {rem:2d} s...", end="\r")
         time.sleep(1)
     send_packets([[0xaa, 0x65]], delay=0)
-    print("\nКалибровка завершена!")
+    print("\nCalibration finished!")
 
 def cmd_remap(args):
     layer_cmd = 0x26 if args.layer == "fn" else 0x22
@@ -105,7 +105,7 @@ def cmd_remap(args):
         packets.append([0xaa, layer_cmd, 0x38, off & 0xff, (off >> 8) & 0xff, 0x00, 0x00, 0x00] + table[i*56:(i+1)*56])
     packets.append([0xaa, layer_cmd, 0x08, 0xf8, 0x01, 0x00, 0x01, 0x00] + table[504:512])
     if send_packets(packets, delay=0.01):
-        print(f"Раскладка ({args.layer}): слот {args.slot} -> HID 0x{args.keycode:02x}")
+        print(f"Layout ({args.layer}): slot {args.slot} -> HID 0x{args.keycode:02x}")
 
 def _write_pair_mode(mode_code, mode_param, slot1, hid1, slot2, hid2, enable, trigger_mm, press_mm=0.0, release_mm=0.0, full_ft=0):
     t_val, p_val, r_val = int(round(trigger_mm * 100)), int(round(press_mm * 100)), int(round(release_mm * 100))
@@ -160,7 +160,7 @@ def cmd_dks(args):
         packets.append([0xaa, 0x22, 0x38, off & 0xff, (off >> 8) & 0xff, 0x00, 0x00, 0x00] + key_table[i*56:(i+1)*56])
     packets.append([0xaa, 0x22, 0x08, 0xf8, 0x01, 0x00, 0x01, 0x00] + key_table[504:512])
     if send_packets(packets, delay=0.01):
-        print(f"DKS (слот {args.slot}): {'ON' if args.enable else 'OFF'}")
+        print(f"DKS (slot {args.slot}): {'ON' if args.enable else 'OFF'}")
 
 def cmd_mt(args):
     key_table = [0x00] * 512
@@ -173,7 +173,7 @@ def cmd_mt(args):
         packets.append([0xaa, 0x22, 0x38, off & 0xff, (off >> 8) & 0xff, 0x00, 0x00, 0x00] + key_table[i*56:(i+1)*56])
     packets.append([0xaa, 0x22, 0x08, 0xf8, 0x01, 0x00, 0x01, 0x00] + key_table[504:512])
     if send_packets(packets, delay=0.01):
-        print(f"MT (слот {args.slot}): {'ON' if args.enable else 'OFF'}, hold=0x{args.hold:02x}, click=0x{args.click:02x}, time={args.time}ms")
+        print(f"MT (slot {args.slot}): {'ON' if args.enable else 'OFF'}, hold=0x{args.hold:02x}, click=0x{args.click:02x}, time={args.time}ms")
 
 def cmd_tgl(args):
     key_table = [0x00] * 512
@@ -185,7 +185,7 @@ def cmd_tgl(args):
         packets.append([0xaa, 0x22, 0x38, off & 0xff, (off >> 8) & 0xff, 0x00, 0x00, 0x00] + key_table[i*56:(i+1)*56])
     packets.append([0xaa, 0x22, 0x08, 0xf8, 0x01, 0x00, 0x01, 0x00] + key_table[504:512])
     if send_packets(packets, delay=0.01):
-        print(f"TGL (слот {args.slot}): {'ON' if args.enable else 'OFF'}, keycode=0x{args.keycode:02x}")
+        print(f"TGL (slot {args.slot}): {'ON' if args.enable else 'OFF'}, keycode=0x{args.keycode:02x}")
 
 def cmd_settings(args):
     rate_map = {"1k": 0x03, "4k": 0x05, "8k": 0x06}
@@ -200,7 +200,7 @@ def cmd_settings(args):
         print(f"Settings: Rate={args.rate.upper()}, AdaptiveCalib={args.adaptive}, DZ={args.dz_enable} ({args.top}/{args.bottom}mm)")
 
 def cmd_macro(args):
-    # Формируем тело макроса: заголовок 4 байта + события по 4 байта (delay_l, delay_h, hid, flag)
+    # Macro body: 4-byte header + 4 bytes per event (delay_l, delay_h, hid, flag)
     events = []
     for k in args.keys:
         events.extend([args.delay & 0xff, (args.delay >> 8) & 0xff, k & 0xff, 0xb0])
@@ -223,10 +223,10 @@ def cmd_macro(args):
     packets.append([0xaa, 0x22, 0x08, 0xf8, 0x01, 0x00, 0x01, 0x00] + key_table[504:512])
 
     if send_packets(packets, delay=0.01):
-        print(f"Макрос M1 записан и назначен на слот {args.slot}: клавиши={[hex(k) for k in args.keys]}, задержка={args.delay}ms")
+        print(f"Macro M1 written and assigned to slot {args.slot}: keys={[hex(k) for k in args.keys]}, delay={args.delay}ms")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Единый оффлайн-драйвер Ajazz AK820 Max HE")
+    parser = argparse.ArgumentParser(description="Offline command-line driver for the Ajazz AK820 Max HE")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_light = sub.add_parser("light")
@@ -324,7 +324,7 @@ if __name__ == "__main__":
     p_set.set_defaults(func=cmd_settings)
 
     p_mac = sub.add_parser("macro")
-    p_mac.add_argument("--slot", type=int, default=0, help="Индекс клавиши (0 = Esc)")
+    p_mac.add_argument("--slot", type=int, default=0, help="Key slot index (0 = Esc)")
     p_mac.add_argument("--keys", type=lambda x: int(x, 0), nargs="+", default=[0x04, 0x05])
     p_mac.add_argument("--delay", type=int, default=20)
     p_mac.set_defaults(func=cmd_macro)
