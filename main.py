@@ -55,6 +55,41 @@ def offer_update(win, updater, version):
         updater.apply_on_exit()
 
 
+INSTANCE_KEY = "Intellijency-" + os.environ.get("USERNAME", os.environ.get("USER", "user"))
+
+
+def hand_off_to_running_copy(show: bool) -> bool:
+    """True when Intellijency is already running; asks that copy to show its window unless started in the background."""
+    from PySide6.QtNetwork import QLocalSocket
+    sock = QLocalSocket()
+    sock.connectToServer(INSTANCE_KEY)
+    if not sock.waitForConnected(500):
+        return False
+    sock.write(b"show" if show else b"ping")
+    sock.waitForBytesWritten(500)
+    sock.disconnectFromServer()
+    return True
+
+
+def listen_for_other_copies(win):
+    """Later launches (desktop shortcut, Start with Windows) bring this window forward instead of starting a second app."""
+    from PySide6.QtNetwork import QLocalServer
+    server = QLocalServer(win)
+    QLocalServer.removeServer(INSTANCE_KEY)  # clears a stale socket left by a crash (no-op on Windows)
+
+    def on_connect():
+        conn = server.nextPendingConnection()
+        if conn.waitForReadyRead(500) and bytes(conn.readAll()).startswith(b"show"):
+            win.showNormal()
+            win.raise_()
+            win.activateWindow()
+        conn.deleteLater()
+
+    server.newConnection.connect(on_connect)
+    server.listen(INSTANCE_KEY)
+    return server
+
+
 sys.excepthook = handle_exception
 
 if __name__ == "__main__":
@@ -64,6 +99,9 @@ if __name__ == "__main__":
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
             "velopack.Intellijency" if getattr(sys, "frozen", False) else "Intellijency.App")
     app = QApplication(sys.argv)
+    background = "--minimized" in sys.argv  # Start with Windows
+    if not DEMO and hand_off_to_running_copy(show=not background):
+        sys.exit(0)  # one copy only: two would fight over the keyboard and the lights
     icon = QIcon()
     _bd = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     for _p in (os.path.join(_bd, "assets", "intellijency-logo.ico"), os.path.join(_bd, "assets", "icon.png")):
@@ -78,11 +116,12 @@ if __name__ == "__main__":
     version = current_version()
     win.setWindowTitle(f"Intellijency {version}" if version else ("Intellijency (demo)" if DEMO else "Intellijency"))
     win.move(app.primaryScreen().availableGeometry().center() - win.rect().center())  # open centred, fully on screen
+    if not DEMO:
+        win._instance_server = listen_for_other_copies(win)
 
     if QSystemTrayIcon.isSystemTrayAvailable():
         win.tray = Tray(app, win, icon)
         app.setQuitOnLastWindowClosed(False)  # closing the window keeps the app (and its lighting) running
-    background = "--minimized" in sys.argv  # Start with Windows
     if background and getattr(win, "tray", None) is None:
         win.showMinimized()
     elif not background:
