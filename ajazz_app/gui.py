@@ -809,8 +809,25 @@ class AjazzWindow(QWidget):
             e.ignore()
             self.hide()
             tray.hint_once()
+            QTimer.singleShot(2000, self.release_memory)
             return
         super().closeEvent(e)
+
+    def release_memory(self):
+        """In the tray: give the memory the window used back to Windows, so games can use it. Pages come back if reopened."""
+        if self.isVisible():
+            return
+        import gc
+        from PySide6.QtGui import QPixmapCache
+        QPixmapCache.clear()
+        gc.collect()
+        if sys.platform == "win32":
+            import ctypes
+            k32 = ctypes.windll.kernel32
+            k32.GetCurrentProcess.restype = ctypes.c_void_p
+            k32.SetProcessWorkingSetSize.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t]
+            trim = ctypes.c_size_t(-1).value  # (SIZE_T)-1 for both limits = trim the working set
+            k32.SetProcessWorkingSetSize(k32.GetCurrentProcess(), trim, trim)
 
     def _home_devices(self):
         devs, _ = self.pc_page._devices()
