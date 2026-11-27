@@ -116,6 +116,31 @@ def apply_to_device(dev, effect: str, col: QColor):
     dev.set_color(RGBColor(col.red(), col.green(), col.blue()))
 
 
+HEADER_LEDS = 80  # enough for a chain of 3-4 RGB fans; extra lights that aren't plugged in are simply ignored
+
+
+def size_empty_headers(devices) -> int:
+    """Give motherboard RGB headers that OpenRGB reports as 0 lights a size, so fans and strips plugged into them light up.
+    OpenRGB starts every addressable header at 0 and forgets the size on restart. Headers already sized are left alone."""
+    sized = 0
+    for dev in devices:
+        before = sized
+        data = getattr(dev, "data", None)
+        for zone, info in zip(dev.zones, getattr(data, "zones", [])):
+            if info.num_leds == 0 and info.leds_max > 0 and "LINEAR" in zone.type.name:
+                try:
+                    zone.resize(min(HEADER_LEDS, info.leds_max))
+                    sized += 1
+                except Exception:
+                    pass  # a header that refuses a size stays dark; the rest still work
+        if sized > before:
+            try:
+                dev.update()
+            except Exception:
+                pass
+    return sized
+
+
 def apply_and_remember(dev, effect: str, col: QColor):
     """apply_to_device, and keep the look so it can be put back after a restart (most PC parts forget it at power-off)."""
     apply_to_device(dev, effect, col)
@@ -256,6 +281,7 @@ class PcLightingPage(QWidget):
         try:
             if self.client is None:
                 self.client = OpenRGBClient(HOST, PORT, "Ajazz Control")
+                size_empty_headers(self.client.devices)
             else:
                 self.client.update()
             return True
