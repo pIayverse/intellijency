@@ -4,10 +4,11 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QPixmap, QPainter, QIcon
 from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton, QComboBox)
 from .device_art import device_picture
-import os, re
+import json, os, re
 from PySide6.QtWidgets import QFileDialog
 
 PICTURE_DIR = os.path.expanduser("~/.config/ajazz_studio/device_pictures")
+LOOKS_PATH = os.path.expanduser("~/.config/ajazz_studio/device_looks.json")
 
 
 def _picture_path(device_name: str) -> str:
@@ -113,6 +114,43 @@ def apply_to_device(dev, effect: str, col: QColor):
     if mode:
         dev.set_mode(mode)
     dev.set_color(RGBColor(col.red(), col.green(), col.blue()))
+
+
+def apply_and_remember(dev, effect: str, col: QColor):
+    """apply_to_device, and keep the look so it can be put back after a restart (most PC parts forget it at power-off)."""
+    apply_to_device(dev, effect, col)
+    looks = load_looks()
+    looks[dev.name] = {"effect": effect, "colour": col.name()}  # by name: OpenRGB ids can change between starts
+    try:
+        os.makedirs(os.path.dirname(LOOKS_PATH), exist_ok=True)
+        with open(LOOKS_PATH, "w", encoding="utf-8") as f:
+            json.dump(looks, f, indent=2)
+    except OSError:
+        pass
+
+
+def load_looks() -> dict:
+    try:
+        with open(LOOKS_PATH, encoding="utf-8") as f:
+            looks = json.load(f)
+        return looks if isinstance(looks, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def restore_looks(devices) -> int:
+    """Put each device back to the look it last had in Intellijency. Returns how many were restored."""
+    looks, done = load_looks(), 0
+    for dev in devices:
+        look = looks.get(dev.name)
+        if not isinstance(look, dict) or look.get("effect") not in EFFECTS or not QColor.isValidColorName(str(look.get("colour"))):
+            continue
+        try:
+            apply_to_device(dev, look["effect"], QColor(look["colour"]))
+            done += 1
+        except Exception:
+            pass  # one device failing must not stop the rest
+    return done
 
 
 class PcLightingPage(QWidget):
@@ -246,7 +284,7 @@ class PcLightingPage(QWidget):
                     mode = dev.modes[dev.active_mode].name if dev.modes else "?"
                     txt = mode + (f" {now.name().upper()}" if mode.lower() in ("static", "direct") else "")
                 out.append((dev.id, dev.name, dev.type.name, TYPE_NAMES.get(dev.type.name, dev.type.name.title()), now, txt,
-                            lambda e, c, dv=dev: apply_to_device(dv, e, c)))
+                            lambda e, c, dv=dev: apply_and_remember(dv, e, c)))
         return out, ok
 
     def rescan(self):
@@ -455,7 +493,7 @@ class PcLightingPage(QWidget):
             return ok
         for dev in self.client.devices:
             try:
-                apply_to_device(dev, self.cb_all.currentText(), self.all_colour)
+                apply_and_remember(dev, self.cb_all.currentText(), self.all_colour)
                 self.dev_colours[dev.id] = QColor(self.all_colour)
             except Exception as e:
                 ok = False

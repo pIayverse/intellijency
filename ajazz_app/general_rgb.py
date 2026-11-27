@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt, QTimer, QElapsedTimer, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QCheckBox
 
-from .pc_rgb import TYPE_NAMES, apply_to_device, current_colour, status_swatch, _swatch, _find_mode
+from .pc_rgb import TYPE_NAMES, apply_to_device, apply_and_remember, restore_looks, current_colour, status_swatch, _swatch, _find_mode
 
 try:
     from openrgb.utils import RGBColor
@@ -381,14 +381,21 @@ class GeneralLightingPage(QWidget):
         self.scene = s.get("scene")
         return s
 
-    def resume(self, attempts=12):
-        """At startup: restart a streamed effect that was running, waiting for OpenRGB (it may start after us)."""
-        if self.cb.currentText() not in SYNCED:
-            return
-        if self.pc._connect() and self.pc.client.devices:
-            self.apply(scene_name=self.scene)
+    def resume(self, attempts=36, seen=-1):
+        """At startup: put PC parts back how they were (most forget at power-off). Waits up to 3 minutes for OpenRGB,
+        which may start after us, and until its device count stops changing, so devices still being detected aren't missed."""
+        count = len(self.pc.client.devices) if self.pc._connect() else 0
+        if count and count == seen:
+            if self.cb.currentText() in SYNCED:
+                self.apply(scene_name=self.scene)  # restart the synced effect on every device
+            else:
+                n = restore_looks(dev for dev in self.pc.client.devices if dev.id not in self.skip)
+                if n:
+                    self._log(f"✓ Restored lighting on {n} device{'s' if n != 1 else ''}", True)
+                self.refresh()
+                self.changed.emit()
         elif attempts > 0:
-            QTimer.singleShot(5000, lambda: self.resume(attempts - 1))
+            QTimer.singleShot(5000, lambda: self.resume(attempts - 1, count))
 
     def apply(self, scene_name=None) -> bool:
         self.stop_sync()
@@ -418,7 +425,7 @@ class GeneralLightingPage(QWidget):
             else:
                 for dev in targets:
                     try:
-                        apply_to_device(dev, effect, self.colour)
+                        apply_and_remember(dev, effect, self.colour)
                         done += 1
                     except Exception:
                         failed.append(dev.name)
