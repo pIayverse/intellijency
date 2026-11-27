@@ -122,6 +122,8 @@ if __name__ == "__main__":
     if QSystemTrayIcon.isSystemTrayAvailable():
         win.tray = Tray(app, win, icon)
         app.setQuitOnLastWindowClosed(False)  # closing the window keeps the app (and its lighting) running
+    if background and getattr(win, "tray", None) is not None:
+        QTimer.singleShot(20000, win.release_memory)  # started into the tray: hand back start-up memory once lighting is restored
     if background and getattr(win, "tray", None) is None:
         win.showMinimized()
     elif not background:
